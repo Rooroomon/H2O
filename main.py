@@ -38,10 +38,10 @@ playerC_condensation = [player_frames[i] for i in [143, 144, 145, 146, 154, 155,
 # 설정
 # =========================
 
-WIDTH, HEIGHT = 1920, 1080
+WIDTH, HEIGHT = 1080, 720
 FPS = 60
 
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("H2O")
 pygame.display.set_icon(icon)
 
@@ -220,8 +220,10 @@ class Player:
         self.height = 36
         
         self.dir = 1
+        self.land = "ground"
 
         self.on_ground = False
+        self.landslope = None
         
         self.movedelay = 0
 
@@ -366,6 +368,8 @@ class Player:
 
                 # 아래에서 착지
                 if self.vy > 0:
+                    self.land = "ground"
+                    
                     self.y = p.y - self.height
                     self.vy = 0
                     self.on_ground = True
@@ -393,12 +397,17 @@ class Player:
 
                 # 경사 위에 착지
                 if feet >= slope_y and feet <= slope_y + 20:
+                    self.land = "slope"
+                    self.landslope = slope
 
                     self.y = slope_y - self.height
                     self.vy = 0
                     self.on_ground = True
                     if self.animestate == "W_fall" or self.animestate == "W_falling":
                         self.animestate = "W_land"
+                        
+        if self.on_ground == False:
+            self.land = "none"
 
     # =========================
     # 상태 업데이트
@@ -493,7 +502,7 @@ class Player:
             self.anime_speed = 4
         elif self.animestate == "W_jump":
             target = playerW_jump
-            self.anime_speed = 4
+            self.anime_speed = 5
             yPivot = 27
         elif self.animestate == "W_fall":
             target = playerW_fall
@@ -529,6 +538,7 @@ class Player:
             
         if self.animestate != self.animestate_pre:
             self.anime_index = 0
+            self.anime_timer = 0
             self.animestate_pre = self.animestate
             
         #애니메이션
@@ -547,8 +557,23 @@ class Player:
         
         if(self.dir == -1): #좌우반전
             img = pygame.transform.flip(img, True, False)
-    
+            
+            
+        if self.land == "slope":
+            dx = self.landslope.x2 - self.landslope.x1
+            dy = self.landslope.y2 - self.landslope.y1
+
+            angle = math.degrees(math.atan2(dy, dx))
+            
+            img = pygame.transform.rotate(img, -angle)
+            
+            xPivot = 36 * math.sqrt(2) * math.cos(math.radians(45 - angle))
+            yPivot = 36 * math.sqrt(2) * math.sin(math.radians(45 - angle))
+            
+            
         screen.blit(img, (self.x - xPivot, self.y - yPivot))
+        
+        pygame.draw.rect(screen, (255, 0, 0), (self.x - self.width * 0.5, self.y, self.width, self.height), 1)
         
 
         # 온도 게이지
