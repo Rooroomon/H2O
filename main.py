@@ -120,8 +120,8 @@ class Slope:
         pygame.draw.line(
             screen,
             (180, 180, 180),
-            (self.x1, self.y1),
-            (self.x2, self.y2),
+            (self.x1, self.y1 + 6),
+            (self.x2, self.y2 + 6),
             6
         )
 
@@ -216,8 +216,8 @@ class Player:
         self.vx = 0
         self.vy = 0
 
-        self.width = 36
-        self.height = 36
+        self.width = 56
+        self.height = 56
         
         self.dir = 1
         self.land = "ground"
@@ -272,11 +272,11 @@ class Player:
             if self.state == "water":
                 speed = 5
     
-                if keys[pygame.K_a]:
+                if keys[pygame.K_a] or keys[pygame.K_LEFT]:
                     self.vx = -speed
                     if self.on_ground:
                         self.animestate = "W_walk"
-                elif keys[pygame.K_d]:
+                elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
                     self.vx = speed
                     if self.on_ground:
                         self.animestate = "W_walk"
@@ -295,9 +295,9 @@ class Player:
                 accel = 0.3
                 max_speed = 8
     
-                if keys[pygame.K_a]:
+                if keys[pygame.K_a] or keys[pygame.K_LEFT]:
                     self.vx -= accel
-                if keys[pygame.K_d]:
+                if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
                     self.vx += accel
     
                 # 마찰 적음
@@ -312,15 +312,15 @@ class Player:
                 accel = 0.35
                 max_speed = 5
     
-                if keys[pygame.K_a]:
+                if keys[pygame.K_a] or keys[pygame.K_LEFT]:
                     self.vx -= accel
-                if keys[pygame.K_d]:
+                if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
                     self.vx += accel
     
-                if keys[pygame.K_w]:
+                if keys[pygame.K_w] or keys[pygame.K_UP]:
                     self.vy -= accel
     
-                if keys[pygame.K_s]:
+                if keys[pygame.K_s] or keys[pygame.K_DOWN]:
                     self.vy += accel
     
                 self.vx *= 0.95
@@ -489,8 +489,8 @@ class Player:
 
     def draw(self, screen):
         target = []
-        xPivot = 36
-        yPivot = 36
+        xPivot = 56
+        yPivot = 56
         
         #애니메이션 선택
         #print(self.animestate)
@@ -503,15 +503,15 @@ class Player:
         elif self.animestate == "W_jump":
             target = playerW_jump
             self.anime_speed = 5
-            yPivot = 27
+            yPivot = 42
         elif self.animestate == "W_fall":
             target = playerW_fall
             self.anime_speed = 4
-            yPivot = 27
+            yPivot = 42
         elif self.animestate == "W_falling":
             target = playerW_falling
             self.anime_speed = 4
-            yPivot = 27
+            yPivot = 42
         elif self.animestate == "W_land":
             target = playerW_land
             self.anime_speed = 4
@@ -553,11 +553,13 @@ class Player:
             self.anime_index = self.anime_index % len(target)
 
         img = target[self.anime_index]
-        img = pygame.transform.scale(img, (72, 72))
+        img = pygame.transform.scale(img, (self.width, self.height))
         
         if(self.dir == -1): #좌우반전
             img = pygame.transform.flip(img, True, False)
             
+        orig_rect = img.get_rect()
+        orig_rect.topleft = (self.x, self.y)            
             
         if self.land == "slope":
             dx = self.landslope.x2 - self.landslope.x1
@@ -565,15 +567,18 @@ class Player:
 
             angle = math.degrees(math.atan2(dy, dx))
             
-            img = pygame.transform.rotate(img, -angle)
+            rotated = pygame.transform.rotate(img, -angle)
             
-            xPivot = 36 * math.sqrt(2) * math.cos(math.radians(45 - angle))
-            yPivot = 36 * math.sqrt(2) * math.sin(math.radians(45 - angle))
-            
-            
-        screen.blit(img, (self.x - xPivot, self.y - yPivot))
+            rot_rect = rotated.get_rect(center=orig_rect.center)
+
+            screen.blit(rotated, rot_rect)
+        else:
+            screen.blit(img, orig_rect)
         
-        pygame.draw.rect(screen, (255, 0, 0), (self.x - self.width * 0.5, self.y, self.width, self.height), 1)
+        #debug_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        
+        #pygame.draw.circle(screen, (255,255,0), (self.x, self.y), 4)
+        #pygame.draw.rect(screen, (255, 0, 0), debug_rect, 2)
         
 
         # 온도 게이지
