@@ -20,7 +20,7 @@ for i in range(165):
 
 playerW_idle = [player_frames[i] for i in [0, 1]]
 playerW_walk = [player_frames[i] for i in [11, 12, 13, 14, 15]]
-playerW_jump = [player_frames[i] for i in [22, 23, 24 ,25, 26]]
+playerW_jump = [player_frames[i] for i in [23, 24 ,25, 26]]
 playerW_fall = [player_frames[i] for i in [33, 34, 35, 36]]
 playerW_falling = [player_frames[i] for i in [36]]
 playerW_land = [player_frames[i] for i in [44, 45, 46, 47]]
@@ -42,19 +42,12 @@ WIDTH, HEIGHT = 1080, 720
 FPS = 60
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+game_surface = pygame.Surface((1080, 720))
 pygame.display.set_caption("H2O")
 pygame.display.set_icon(icon)
 
 clock = pygame.time.Clock()
 
-#전체화면 테스트 - - - - - - - - - - - - - - -
-# 모니터 해상도 가져오기 (전체화면용)
-#info = pygame.display.Info()
-#screen_w, screen_h = info.current_w, info.current_h
-
-# 전체화면 플래그와 함께 화면 설정
-#screen = pygame.display.set_mode((screen_w, screen_h), pygame.FULLSCREEN)
-# -------------------------------
 
 # =========================
 # 색상
@@ -489,8 +482,6 @@ class Player:
 
     def draw(self, screen):
         target = []
-        xPivot = 56
-        yPivot = 56
         
         #애니메이션 선택
         #print(self.animestate)
@@ -657,25 +648,43 @@ while running:
     # =====================
     # 렌더링
     # =====================
-
-    screen.fill(BLACK)
+    
+    #초기화
+    window_width, window_height = pygame.display.get_surface().get_size()
+    game_surface = pygame.Surface((window_width, window_height))
+    game_surface.fill(BLACK)
 
     # 발판
     for p in platforms:
-        pygame.draw.rect(screen, GROUND, p)
+        pygame.draw.rect(game_surface, GROUND, p)
 
     # 오브젝트
     for obj in objects:
-        obj.draw(screen)
+        obj.draw(game_surface)
 
     # 플레이어
-    player.draw(screen)
+    player.draw(game_surface)
     
     for slope in slopes:
-        slope.draw(screen)
+        slope.draw(game_surface)
 
     for ball in balls:
-        ball.draw(screen)
+        ball.draw(game_surface)
+    
+    
+    #최종 출력
+    
+    
+    #scale = min(window_width / 1080, window_height / 720)
+    
+    #scaled_surface = pygame.transform.scale(
+    #    game_surface,
+    #    (1080 * scale, 720 * scale)
+    #)
+    
+    screen.fill(BLACK)
+    
+    screen.blit(game_surface,(0,0))#(scaled_surface, ((window_width - 1080 * scale)/2, (window_height - 720 * scale)/2))
 
     pygame.display.flip()
 
