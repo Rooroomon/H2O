@@ -39,16 +39,20 @@ playerC_condensation = [player_frames[i] for i in [143, 144, 145, 146, 154, 155,
 # =========================
 
 WIDTH, HEIGHT = 1080, 720
+window_width_pre, window_height_pre = 0, 0
 FPS = 60
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-game_surface = pygame.Surface((1080, 720))
+game_surface = pygame.Surface((6400, 3200))
+UI_surface = pygame.Surface((1280, 720), pygame.SRCALPHA)
 pygame.display.set_caption("H2O")
 pygame.display.set_icon(icon)
 
 clock = pygame.time.Clock()
 
 
+
+font = pygame.font.SysFont(None, 30)
 # =========================
 # 색상
 # =========================
@@ -219,6 +223,8 @@ class Player:
         self.landslope = None
         
         self.movedelay = 0
+        
+        self.transCool = 0
 
         # 상태
         self.state = "water"
@@ -244,17 +250,45 @@ class Player:
     def set_state(self, new_state):
         self.state = new_state
 
-        if new_state in ["ice", "steam"]:
-            self.state_timer = 600  # 10초
-        else:
-            self.state_timer = 0
-
     # =========================
     # 입력 처리
     # =========================
 
     def input(self):
         keys = pygame.key.get_pressed()
+        
+        if self.transCool < 0 and keys[pygame.K_f]:            
+            if self.state == "water":
+                if self.temperature >= 100:
+                    self.set_state("steam")
+                    self.movedelay = 36
+                    self.animestate = "W_eva"
+                    self.transCool = 60
+                elif self.temperature <= -100:
+                    self.set_state("ice")
+                    self.movedelay = 40
+                    self.animestate = "W_freeze"
+                    self.transCool = 60
+            else:
+                if self.state == "steam":
+                    self.animestate = "C_con"
+                    self.movedelay = 36
+                    self.transCool = 60
+                elif self.state == "ice":
+                    self.animestate = "I_unfreeze"
+                    self.movedelay = 40
+                    self.transCool = 60
+                    
+                self.set_state("water")
+                
+        else:
+            self.transCool -= 1
+        
+        #치트
+        if keys[pygame.K_q]:
+            self.temperature = -150
+        elif keys[pygame.K_e]:
+            self.temperature = 150
         
         if(self.movedelay > 0):
             self.movedelay -= 1
@@ -333,10 +367,12 @@ class Player:
         
         if self.state != "water":
             self.temperature -= numpy.sign(self.temperature) * dt * 25
-        elif self.temp_clock > 10:
+        elif self.temp_clock > 4:
             self.temperature -= numpy.sign(self.temperature) * dt * 5
             if abs(self.temperature) < 2:
                 self.temp_clock = -500
+                
+        self.temperature = max(-150, min(self.temperature, 150))
                 
 
         # 중력
@@ -368,17 +404,7 @@ class Player:
                     self.on_ground = True
                     if self.animestate == "W_fall" or self.animestate == "W_falling":
                         self.animestate = "W_land"
-
-        # 화면 밖 제한
-        if self.x < 0:
-            self.x = 0
-
-        if self.x + self.width > WIDTH:
-            self.x = WIDTH - self.width
-
-        if self.y > HEIGHT:
-            self.x = 100
-            self.y = 100
+                        
             
         for slope in slopes:
 
@@ -389,7 +415,7 @@ class Player:
                 feet = self.y + self.height
 
                 # 경사 위에 착지
-                if feet >= slope_y and feet <= slope_y + 20:
+                if feet >= slope_y - 5 and feet <= slope_y + 25 and self.vy >= 0:
                     self.land = "slope"
                     self.landslope = slope
 
@@ -406,33 +432,10 @@ class Player:
     # 상태 업데이트
     # =========================
 
-    def update_state(self):
+    def update_state(self):                   
+        #보는 방향
         if(abs(self.vx) > 0.1):
             self.dir = numpy.sign(self.vx)
-        
-        for event in pygame.event.get():
-            # 키 눌림 체크
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_f:
-                    if self.state == "water":
-                        if self.temperature >= 100:
-                            self.set_state("steam")
-                            self.movedelay = 36
-                            self.animestate = "W_eva"
-                        elif self.temperature <= -100:
-                            self.set_state("ice")
-                            self.movedelay = 40
-                            self.animestate = "W_freeze"
-                    else:
-                        if self.state == "steam":
-                            self.animestate = "C_con"
-                            self.movedelay = 36
-                        elif self.state == "ice":
-                            self.animestate = "I_unfreeze"
-                            self.movedelay = 40
-                            
-                        self.set_state("water")
-
 
         # 상태 타이머 감소
         if abs(self.temperature) < 2:
@@ -480,7 +483,7 @@ class Player:
     # 렌더링
     # =========================
 
-    def draw(self, screen):
+    def draw(self, screen, UIscreen):
         target = []
         
         #애니메이션 선택
@@ -493,7 +496,7 @@ class Player:
             self.anime_speed = 4
         elif self.animestate == "W_jump":
             target = playerW_jump
-            self.anime_speed = 5
+            self.anime_speed = 4
             yPivot = 42
         elif self.animestate == "W_fall":
             target = playerW_fall
@@ -501,11 +504,11 @@ class Player:
             yPivot = 42
         elif self.animestate == "W_falling":
             target = playerW_falling
-            self.anime_speed = 4
+            self.anime_speed = 3
             yPivot = 42
         elif self.animestate == "W_land":
             target = playerW_land
-            self.anime_speed = 4
+            self.anime_speed = 3
         #얼음
         elif self.animestate == "W_freeze":
             target = playerW_freeze
@@ -552,7 +555,7 @@ class Player:
         orig_rect = img.get_rect()
         orig_rect.topleft = (self.x, self.y)            
             
-        if self.land == "slope":
+        if self.state != "steam" and self.land == "slope":
             dx = self.landslope.x2 - self.landslope.x1
             dy = self.landslope.y2 - self.landslope.y1
 
@@ -573,27 +576,46 @@ class Player:
         
 
         # 온도 게이지
-        pygame.draw.rect(screen, WHITE, (20, 20, 200, 20), 2)
+        pygame.draw.rect(UIscreen, WHITE, (20, 20, 200, 20), 2)
 
         center = 120
 
-        gauge_x = center + self.temperature * 0.6
-
-        gauge_x = max(20, min(220, gauge_x))
+        gauge_x = center + self.temperature * 0.66
 
         color = RED if self.temperature > 0 else CYAN
 
-        pygame.draw.circle(screen, color, (int(gauge_x), 30), 8)
+        pygame.draw.circle(UIscreen, color, (int(gauge_x), 30), 8)
 
         # 상태 텍스트
         font = pygame.font.SysFont(None, 32)
 
         txt = font.render(f"STATE : {self.state}", True, WHITE)
 
-        screen.blit(txt, (20, 60))
+        UIscreen.blit(txt, (20, 60))
 
 
 player = Player()
+
+# ==================================================
+# 카메라
+# ==================================================
+class Camera:
+    def __init__(self):
+        self.x = 0
+        self.y = 0
+        512, 288
+        
+
+    def update(self, width, height):
+        #if player.x < self.x + WIDTH / 2 - 256 or player.x > self.x + WIDTH / 2 + 256:
+        #    self.x += (-(player.x - WIDTH / 2) - self.x) * 0.1
+            
+        #if player.y < self.y + HEIGHT / 2 - 144 or player.y > self.y + HEIGHT / 2 + 144:
+        #    self.y += (-(player.y - HEIGHT / 2) - self.y) * 0.1
+        
+        self.x += (-(player.x - width / 2) - self.x) * 0.1
+        self.y += (-(player.y - height / 2) - self.y) * 0.1
+camera = Camera()
 
 # ==================================================
 # 맵
@@ -644,15 +666,25 @@ while running:
     for ball in balls:
         ball.update()
 
-
     # =====================
     # 렌더링
     # =====================
     
     #초기화
     window_width, window_height = pygame.display.get_surface().get_size()
-    game_surface = pygame.Surface((window_width, window_height))
+    
     game_surface.fill(BLACK)
+    
+    if window_width_pre != window_width or window_height_pre != window_height:
+        UI_surface = pygame.Surface((window_width, window_height), pygame.SRCALPHA)
+    else:
+        UI_surface.fill((0, 0, 0, 0))
+    
+    window_width_pre = window_width
+    window_height_pre = window_height
+    
+    #카메라 이동
+    camera.update(window_width, window_height)
 
     # 발판
     for p in platforms:
@@ -663,7 +695,7 @@ while running:
         obj.draw(game_surface)
 
     # 플레이어
-    player.draw(game_surface)
+    player.draw(game_surface, UI_surface)
     
     for slope in slopes:
         slope.draw(game_surface)
@@ -684,7 +716,17 @@ while running:
     
     screen.fill(BLACK)
     
-    screen.blit(game_surface,(0,0))#(scaled_surface, ((window_width - 1080 * scale)/2, (window_height - 720 * scale)/2))
+    screen.blit(game_surface, (camera.x, camera.y))
+    screen.blit(UI_surface, (0, 0))
+    
+    #테스트 프레임
+    fps = clock.get_fps()
+
+    # 글자 Surface 생성
+    fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
+
+    # 화면에 출력
+    screen.blit(fps_text, (200, 20))
 
     pygame.display.flip()
 
