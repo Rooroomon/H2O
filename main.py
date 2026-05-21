@@ -10,6 +10,7 @@ player_sheet = pygame.image.load("./assets/Sprite/Player_Sheet.png")
 gauge_image = pygame.image.load("./assets/Sprite/Gauge.png")
 
 player_frames = []
+gauge_sprites = []
 FRAME_W, FRAME_H = 16, 16
 COLS = 11
 
@@ -17,6 +18,7 @@ for i in range(165):
     row, col = divmod(i, COLS)
     rect = pygame.Rect(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
     player_frames.append(player_sheet.subsurface(rect))
+
 
 playerW_idle = [player_frames[i] for i in [0, 1]]
 playerW_walk = [player_frames[i] for i in [11, 12, 13, 14, 15]]
@@ -33,6 +35,10 @@ playerI_unfreeze = [player_frames[i] for i in [88, 89, 90, 91, 92, 99, 100, 101,
 playerC_idle = [player_frames[i] for i in [132]]
 playerC_condensation = [player_frames[i] for i in [143, 144, 145, 146, 154, 155, 156, 157]]
 
+
+gauge_sprites.append(gauge_image.subsurface((0, 0, 77, 14)))
+gauge_sprites.append(gauge_image.subsurface((0, 14, 77, 14)))
+gauge_sprites.append(gauge_image.subsurface((0, 28, 77, 14)))
 
 # =========================
 # 설정
@@ -576,7 +582,7 @@ class Player:
         
 
         # 온도 게이지
-        pygame.draw.rect(UIscreen, WHITE, (20, 20, 200, 20), 2)
+        UIscreen.blit(gauge_sprites[0], (0, 0))
 
         center = 120
 
