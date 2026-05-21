@@ -377,6 +377,7 @@ class Player:
             self.anime_index = 0
             self.anime_timer = 0
             self.animestate_pre = self.animestate
+            self.anime_end == False
             
         #애니메이션
         self.anime_timer += 1
