@@ -196,8 +196,9 @@ class Camera:
         #if player.y < self.y + HEIGHT / 2 - 144 or player.y > self.y + HEIGHT / 2 + 144:
         #    self.y += (-(player.y - HEIGHT / 2) - self.y) * 0.1
         
-        self.x += (-(player.x - width / 2) - self.x) * 0.1
-        self.y += (-(player.y - height / 2) - self.y) * 0.1
+        self.x += (-(player.x - width / 2) - self.x) * 0.05
+        self.y += (-(player.y - height / 2) - self.y) * 0.05
+        
 camera = Camera()
 
 # ==================================================
@@ -286,16 +287,7 @@ while running:
         ball.draw(game_surface)
     
     
-    #최종 출력
-    
-    
-    #scale = min(window_width / 1080, window_height / 720)
-    
-    #scaled_surface = pygame.transform.scale(
-    #    game_surface,
-    #    (1080 * scale, 720 * scale)
-    #)
-    
+    #최종 출력 ====    
     screen.fill(BLACK)
     
     screen.blit(game_surface, (camera.x, camera.y))
