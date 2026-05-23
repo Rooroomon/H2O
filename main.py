@@ -298,6 +298,7 @@ while running:
 
     # 글자 Surface 생성
     fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
+    #fps_text = font.render(f"Window_Scale: {window_width} {window_height}", True, (255, 255, 255))
 
     # 화면에 출력
     screen.blit(fps_text, (window_width - 100, 20))

@@ -11,7 +11,6 @@ WHITE = (255, 255, 255)
 # =========================
 player_sheet = pygame.image.load("./assets/Sprite/Player_Sheet.png")
 gauge_sheet = pygame.image.load("./assets/Sprite/Gauge.png")
-gaugeDot_sprite = pygame.transform.scale(pygame.image.load("./assets/Sprite/Gauge_Dot.png"), (39, 30))
 
 
 # =========================
@@ -42,9 +41,11 @@ playerI_unfreeze = [player_frames[i] for i in [88, 89, 90, 91, 92, 99, 100, 101,
 playerC_idle = [player_frames[i] for i in [132]]
 playerC_condensation = [player_frames[i] for i in [143, 144, 145, 146, 154, 155, 156, 157]]
 
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 0, 77, 14)), (231, 42)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 14, 77, 14)), (231, 42)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 28, 77, 14)), (231, 42)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 0, 25, 77)), (75, 231)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((25, 0, 25, 77)), (75, 231)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((50, 0, 25, 77)), (75, 231)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((75, 0, 25, 77)), (75, 231)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((100, 0, 25, 77)), (75, 231)))
 
 clock = pygame.time.Clock()
 
@@ -209,10 +210,10 @@ class Player:
         
         
         if self.state != "water":
-            self.temperature -= numpy.sign(self.temperature) * dt * 25
+            self.temperature -= numpy.sign(self.temperature) * dt * 20
         elif self.temp_clock > 4:
             self.temperature -= numpy.sign(self.temperature) * dt * 7.5
-            if abs(self.temperature) < 2:
+            if abs(self.temperature) < 1:
                 self.temp_clock = -500
                 
         self.temperature = max(-150, min(self.temperature, 150))
@@ -281,7 +282,7 @@ class Player:
             self.dir = numpy.sign(self.vx)
 
         # 상태 타이머 감소
-        if abs(self.temperature) < 2:
+        if abs(self.temperature) < 1:
             if self.state == "steam":
                 self.animestate = "C_con"
                 self.movedelay = 36
@@ -376,8 +377,8 @@ class Player:
         if self.animestate != self.animestate_pre:
             self.anime_index = 0
             self.anime_timer = 0
-            self.animestate_pre = self.animestate
             self.anime_end == False
+            self.animestate_pre = self.animestate
             
         #애니메이션
         self.anime_timer += 1
@@ -420,22 +421,31 @@ class Player:
         
 
         # 온도 게이지
-        if self.temperature <= -100:
-            UIscreen.blit(gauge_sprites[1], (0, 0))
-        elif self.temperature >= 100:
-            UIscreen.blit(gauge_sprites[2], (0, 0))
+        gauge_image = gauge_sprites[2]
+        
+        if abs(self.temperature) < 50: #0근처
+            gauge_image = gauge_sprites[2]
+        elif numpy.sign(self.temperature) > 0:
+            if self.temperature >= 100:
+                gauge_image = gauge_sprites[1]  
+            else:
+                gauge_image = gauge_sprites[0]
         else:
-            UIscreen.blit(gauge_sprites[0], (0, 0))
+            if self.temperature <= -100:
+                gauge_image = gauge_sprites[4]
+            else:
+                gauge_image = gauge_sprites[3]
+                
+        UIscreen.blit(gauge_image, (4, 0))
 
-        center = 115.5
 
-        gauge_x = center + self.temperature * 0.6 - 19.5
+        gauge_height = (self.temperature + 150) / 300 * 171
 
-        UIscreen.blit(gaugeDot_sprite, (gauge_x, 6))
+        pygame.draw.rect(UIscreen, (255,84,84), (28, 184 - gauge_height, 6, gauge_height))
 
         # 상태 텍스트
         font = pygame.font.SysFont(None, 32)
 
         txt = font.render(f"STATE : {self.state}", True, WHITE)
 
-        UIscreen.blit(txt, (20, 60))
+        UIscreen.blit(txt, (80, 20))
