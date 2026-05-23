@@ -1,5 +1,7 @@
 import pygame, math, numpy
 from player_Move import Player
+from pyvidplayer2 import Video
+
 
 pygame.init()
 
@@ -7,6 +9,7 @@ pygame.init()
 # 파일 로드
 # =========================
 icon = pygame.image.load("./assets/Sprite/Icon.png")
+video = Video("./assets/Start_Animation.mp4")
 
 # =========================
 # 설정
@@ -232,6 +235,7 @@ while running:
 
         if event.type == pygame.QUIT:
             running = False
+            video.close()
 
     # =====================
     # 업데이트
@@ -298,7 +302,13 @@ while running:
 
     # 글자 Surface 생성
     fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
-    #fps_text = font.render(f"Window_Scale: {window_width} {window_height}", True, (255, 255, 255))
+    #fps_text = font.render(f"Window_Scale: {window_width} {window_height}", True, (255, 255, 255))'
+    
+    # 화면 크기에 맞춰 비디오 렌더링 =======================================
+    video.draw(screen, (window_width - 1680, window_height - 1260, 1680, 1260))
+
+    pygame.display.update()
+    video.update() # 비디오 프레임 갱신
 
     # 화면에 출력
     screen.blit(fps_text, (window_width - 100, 20))
