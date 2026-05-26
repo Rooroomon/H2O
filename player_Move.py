@@ -1,4 +1,5 @@
 import pygame, math, numpy
+from tile_manager import TileMap
 
 # =========================
 # 색상
@@ -24,7 +25,7 @@ COLS = 11
 for i in range(165):
     row, col = divmod(i, COLS)
     rect = pygame.Rect(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
-    player_frames.append(player_sheet.subsurface(rect))
+    player_frames.append(pygame.transform.scale(player_sheet.subsurface(rect), (56, 56)))
     
 playerW_idle = [player_frames[i] for i in [0, 1]]
 playerW_walk = [player_frames[i] for i in [11, 12, 13, 14, 15]]
@@ -91,9 +92,6 @@ class Player:
     # 상태 변경
     # =========================
 
-    def set_state(self, new_state):
-        self.state = new_state
-
     # =========================
     # 입력 처리
     # =========================
@@ -104,12 +102,12 @@ class Player:
         if self.transCool < 0 and keys[pygame.K_f]:            
             if self.state == "water":
                 if self.temperature >= 100:
-                    self.set_state("steam")
+                    self.state = "steam"
                     self.movedelay = 36
                     self.animestate = "W_eva"
                     self.transCool = 60
                 elif self.temperature <= -100:
-                    self.set_state("ice")
+                    self.state = "ice"
                     self.movedelay = 40
                     self.animestate = "W_freeze"
                     self.transCool = 60
@@ -123,7 +121,7 @@ class Player:
                     self.movedelay = 40
                     self.transCool = 60
                     
-                self.set_state("water")
+                self.state = "water"
                 
         else:
             self.transCool -= 1
@@ -158,6 +156,10 @@ class Player:
                 if keys[pygame.K_SPACE] and self.on_ground:
                     self.vy = -7
                     self.animestate = "W_jump"
+                    
+                if not self.on_ground and self.state == "water":
+                    if self.animestate != "W_jump" and self.animestate != "W_fall" and self.animestate != "W_falling":
+                        self.animestate = "W_fall"
     
             # ---------------------
             # 얼음
@@ -204,7 +206,7 @@ class Player:
     # 물리
     # =========================
 
-    def physics(self, platforms, slopes):
+    def physics(self, slopes, tilemap):
         dt = clock.tick(60) / 1000
         self.temp_clock += dt
         
@@ -221,9 +223,13 @@ class Player:
 
         # 중력
         if self.state != "steam":
-            self.vy += 0.25
-
+            if abs(self.vy) < 0:
+                self.vy += 0.35
+            else:
+                self.vy += 0.25
+        
         self.x += self.vx
+        
         self.y += self.vy
 
         self.on_ground = False
@@ -234,20 +240,34 @@ class Player:
             self.width,
             self.height
         )
+        
+        #타일 충돌
+        tile_x1, tile_y = tilemap.world_to_tile(self.x, self.y)
+        tile_x2 = tilemap.world_to_tile(self.x + 54, self.y)[0]
+        tile_x1 = (int)(tile_x1)
+        tile_x2 = (int)(tile_x2)
+        tile_y = (int)(tile_y)
 
-        for p in platforms:
-
-            if player_rect.colliderect(p):
-
-                # 아래에서 착지
-                if self.vy > 0:
-                    self.land = "ground"
+        #print(f"({tile_x}, {tile_y + 1}) : {tilemap.test_solid(tile_x, tile_y + 1)}")
+        
+        #벽
+        if tilemap.test_solid(tile_x1, tile_y) == "Wall" or tilemap.test_solid(tile_x1, tile_y) == "Ground":
+            self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
+        
+        if tilemap.test_solid(tile_x2, tile_y) == "Wall" or tilemap.test_solid(tile_x2, tile_y) == "Ground":
+            self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - 56, self.x)
+        
+        #바닥
+        if tilemap.test_solid(tile_x1, tile_y + 1) == "Ground" or tilemap.test_solid(tile_x2, tile_y + 1) == "Ground":
+            if self.vy >= 0 and self.y <= tilemap.tile_to_world(tile_x1, tile_y + 1)[1] - 45:
+                self.land = "ground"
                     
-                    self.y = p.y - self.height
-                    self.vy = 0
-                    self.on_ground = True
-                    if self.animestate == "W_fall" or self.animestate == "W_falling":
-                        self.animestate = "W_land"
+                self.y = tilemap.tile_to_world(tile_x1, tile_y + 1)[1] - self.height
+                self.vy = 0
+                self.on_ground = True
+                if self.animestate == "W_fall" or self.animestate == "W_falling":
+                    self.animestate = "W_land"
+
                         
             
         for slope in slopes:
@@ -290,7 +310,7 @@ class Player:
                 self.animestate = "I_unfreeze"
                 self.movedelay = 40
                 
-            self.set_state("water")
+            self.state = "water"
             
                 
         # 애니메이션 상태 전환
@@ -392,7 +412,6 @@ class Player:
             self.anime_index = self.anime_index % len(target)
 
         img = target[self.anime_index]
-        img = pygame.transform.scale(img, (self.width, self.height))
         
         if(self.dir == -1): #좌우반전
             img = pygame.transform.flip(img, True, False)

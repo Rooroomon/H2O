@@ -1,6 +1,7 @@
 import pygame, math, numpy
 from player_Move import Player
 from pyvidplayer2 import Video
+from tile_manager import TileMap
 
 
 pygame.init()
@@ -41,6 +42,7 @@ RED = (255, 100, 100)
 CYAN = (100, 255, 255)
 
 GROUND = (90, 90, 90)
+GRAY = (161, 161, 161)
 
 # =========================
 # 온도 오브젝트
@@ -90,8 +92,8 @@ class Slope:
         pygame.draw.line(
             screen,
             (180, 180, 180),
-            (self.x1, self.y1 + 6),
-            (self.x2, self.y2 + 6),
+            (self.x1, self.y1 + 4),
+            (self.x2, self.y2 + 4),
             6
         )
 
@@ -125,19 +127,19 @@ class Ball:
         self.y += self.vy
 
         # 바닥 충돌
-        for p in platforms:
+        #for p in platforms:
 
-            rect = pygame.Rect(
-                self.x - self.radius,
-                self.y - self.radius,
-                self.radius * 2,
-                self.radius * 2
-            )
+        #    rect = pygame.Rect(
+        #        self.x - self.radius,
+        #        self.y - self.radius,
+        #        self.radius * 2,
+        #        self.radius * 2
+        #    )
 
-            if rect.colliderect(p):
+        #    if rect.colliderect(p):
 
-                self.y = p.y - self.radius
-                self.vy = 0
+        #        self.y = p.y - self.radius
+        #        self.vy = 0
 
         # 경사 충돌
         for slope in slopes:
@@ -207,13 +209,6 @@ camera = Camera()
 # ==================================================
 # 맵
 # ==================================================
-
-platforms = [
-    pygame.Rect(0, 650, 1200, 50),
-    pygame.Rect(350, 500, 350, 30),
-    pygame.Rect(700, 400, 250, 30),
-]
-
 slopes = [
     Slope(200, 600, 500, 450),
     Slope(700, 500, 1000, 600),
@@ -222,6 +217,8 @@ slopes = [
 balls = [
     Ball(300, 100, 20)
 ]
+
+tilemap = TileMap()
 # =========================
 # 메인 루프
 # =========================
@@ -246,7 +243,7 @@ while running:
     for obj in objects:
         obj.affect_player(player)
 
-    player.physics(platforms, slopes)
+    player.physics(slopes, tilemap)
 
     player.update_state()
     
@@ -260,7 +257,7 @@ while running:
     #초기화
     window_width, window_height = pygame.display.get_surface().get_size()
     
-    game_surface.fill(BLACK)
+    game_surface.fill(GRAY)
     
     if window_width_pre != window_width or window_height_pre != window_height:
         UI_surface = pygame.Surface((window_width, window_height), pygame.SRCALPHA)
@@ -273,13 +270,11 @@ while running:
     #카메라 이동
     camera.update(window_width, window_height)
 
-    # 발판
-    for p in platforms:
-        pygame.draw.rect(game_surface, GROUND, p)
-
     # 오브젝트
     for obj in objects:
         obj.draw(game_surface)
+        
+    tilemap.draw(game_surface)
 
     # 플레이어
     player.draw(game_surface, UI_surface)
@@ -292,7 +287,7 @@ while running:
     
     
     #최종 출력 ====    
-    screen.fill(BLACK)
+    screen.fill(GRAY)
     
     screen.blit(game_surface, (camera.x, camera.y))
     screen.blit(UI_surface, (0, 0))
@@ -305,10 +300,11 @@ while running:
     #fps_text = font.render(f"Window_Scale: {window_width} {window_height}", True, (255, 255, 255))'
     
     # 화면 크기에 맞춰 비디오 렌더링 =======================================
-    video.draw(screen, (window_width - 1680, window_height - 1260, 1680, 1260))
+    #video.draw(screen, (window_width - 1680, window_height - 1260, 1680, 1260))
 
-    pygame.display.update()
-    video.update() # 비디오 프레임 갱신
+    #pygame.display.update()
+    #video.update() # 비디오 프레임 갱신
+    
 
     # 화면에 출력
     screen.blit(fps_text, (window_width - 100, 20))
