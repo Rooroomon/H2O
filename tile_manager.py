@@ -13,6 +13,8 @@ tiles = []
 FRAME_W, FRAME_H = 8, 8
 COLS = 6
 TILE_SIZE = 64
+SCREEN_W = 1280
+SCREEN_H = 720
 
 for i in range(30):
     row, col = divmod(i, COLS)
@@ -29,7 +31,7 @@ MAP1 = [
     "0↑.........'........↓0",
     "0↑..................↓0",
     "0└..................┘0",
-    "←←←←←←←←←←←←←←←←←←←←←←"
+    "0←←←←←←←←←←←←←←←←←←←←0"
 ]
 
 #├ : 1, 조명 왼쪽 끝
@@ -133,11 +135,46 @@ class TileMap:
             py // TILE_SIZE
         )
     
-    def draw(self, screen):
-        for y, row in enumerate(self.map_data):
-            for x, tile in enumerate(row):
-                pos = self.tile_to_world(x, y)
-                    
-                if tile != None:
-                    index = TILE_INFO[tile]["index"]
-                    screen.blit(tiles[index], pos)
+    def draw(self, screen, camera_x, camera_y):
+        # 카메라 기준 화면 시작 위치
+        start_x = camera_x - SCREEN_W // 2
+        start_y = camera_y - SCREEN_H // 2
+    
+        # 화면에 보이는 타일 범위 계산
+        first_tile_x = (int)(max(0, start_x // TILE_SIZE))
+        first_tile_y = (int)(max(0, start_y // TILE_SIZE))
+    
+        last_tile_x = (int)(min(self.width, (start_x + SCREEN_W) // TILE_SIZE + 2))
+        last_tile_y = (int)(min(self.height, (start_y + SCREEN_H) // TILE_SIZE + 2))
+    
+        # 보이는 타일만 렌더링
+        for y in range(first_tile_y, last_tile_y):
+            for x in range(first_tile_x, last_tile_x):
+    
+                tile = self.map_data[y][x]
+    
+                if tile is None:
+                    continue
+    
+                index = TILE_INFO[tile]["index"]
+    
+                # 월드 좌표
+                world_x, world_y = self.tile_to_world(x, y)
+    
+                # 카메라 적용한 화면 좌표
+                screen_x = int(world_x - start_x)
+                screen_y = int(world_y - start_y)
+    
+                screen.blit(tiles[index], (screen_x, screen_y))
+                
+                
+    #def draw(self, screen, camera_x, camera_y):
+    #    for y, row in enumerate(self.map_data):
+    #        for x, tile in enumerate(row):
+    #            index = 4
+    #            pos = self.tile_to_world(x, y)
+    #                
+    #            if tile != None:
+    #                index = TILE_INFO[tile]["index"]
+    #                
+    #            screen.blit(tiles[index], pos)

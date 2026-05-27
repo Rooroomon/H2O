@@ -357,7 +357,7 @@ class Player:
     # 렌더링
     # =========================
 
-    def draw(self, screen, UIscreen):
+    def draw(self, screen, UIscreen, camera_x, camera_y):
         target = []
         
         #애니메이션 선택
@@ -427,7 +427,7 @@ class Player:
             img = pygame.transform.flip(img, True, False)
             
         orig_rect = img.get_rect()
-        orig_rect.topleft = (self.x, self.y)            
+        orig_rect.topleft = (int(self.x - camera_x + 640), int(self.y - camera_y + 360))
             
         if self.state != "steam" and self.land == "slope":
             dx = self.landslope.x2 - self.landslope.x1
