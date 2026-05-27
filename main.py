@@ -10,7 +10,7 @@ pygame.init()
 # 파일 로드
 # =========================
 icon = pygame.image.load("./assets/Sprite/Icon.png")
-video = Video("./assets/Start_Animation.mp4")
+#video = Video("./assets/Start_Animation.mp4")
 
 # =========================
 # 설정
@@ -125,23 +125,8 @@ class Ball:
 
         self.x += self.vx
         self.y += self.vy
-
-        # 바닥 충돌
-        #for p in platforms:
-
-        #    rect = pygame.Rect(
-        #        self.x - self.radius,
-        #        self.y - self.radius,
-        #        self.radius * 2,
-        #        self.radius * 2
-        #    )
-
-        #    if rect.colliderect(p):
-
-        #        self.y = p.y - self.radius
-        #        self.vy = 0
-
-        # 경사 충돌
+        
+        # 경사 충돌    
         for slope in slopes:
 
             if slope.x1 <= self.x <= slope.x2:
@@ -164,6 +149,32 @@ class Ball:
 
                     # 경사 따라 굴러감
                     self.vx += math.cos(angle) * 0.5 * numpy.sign(angle)
+                    
+                    
+        tile_x1, tile_y = tilemap.world_to_tile(self.x, self.y)
+        tile_x2 = tilemap.world_to_tile(self.x + 50, self.y)[0]
+        tile_x1 = (int)(tile_x1)
+        tile_x2 = (int)(tile_x2)
+        tile_y = (int)(tile_y)
+        tileType1 = tilemap.test_solid(tile_x1, tile_y)
+        tileType2 = tilemap.test_solid(tile_x2, tile_y)
+                    
+        #벽
+        if tileType1 == "Wall" or tileType1 == "Ground":
+            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + self.radius * 2 - 5:
+                self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
+        
+        if tileType2 == "Wall" or tileType2 == "Ground":
+            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + self.radius * 2 - 5:
+                self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - self.radius * 2, self.x)
+        
+        #바닥
+        if tilemap.test_solid(tile_x1, tile_y) == "Ground" or tilemap.test_solid(tile_x2, tile_y) == "Ground":
+            if self.vy >= 0:
+                self.y = tilemap.tile_to_world(tile_x1, tile_y)[1] - self.radius - 1
+                self.vy = 0
+                
+        print(f"{self.y}")
 
         # 마찰
         self.vx *= 0.99
@@ -232,7 +243,7 @@ while running:
 
         if event.type == pygame.QUIT:
             running = False
-            video.close()
+            #video.close()
 
     # =====================
     # 업데이트

@@ -247,15 +247,25 @@ class Player:
         tile_x1 = (int)(tile_x1)
         tile_x2 = (int)(tile_x2)
         tile_y = (int)(tile_y)
+        tileType1 = tilemap.test_solid(tile_x1, tile_y)
+        tileType2 = tilemap.test_solid(tile_x2, tile_y)
 
         #print(f"({tile_x}, {tile_y + 1}) : {tilemap.test_solid(tile_x, tile_y + 1)}")
         
+        #천장
+        if tileType1 == "Ground" or tileType2 == "Ground" or tileType1 == "Wall" or tileType2 == "Wall":
+            if self.vy <= 0:
+                self.y = tilemap.tile_to_world(tile_x1, tile_y)[1] + 56
+                self.vy = 0
+                
         #벽
-        if tilemap.test_solid(tile_x1, tile_y) == "Wall" or tilemap.test_solid(tile_x1, tile_y) == "Ground":
-            self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
+        if tileType1 == "Wall" or tileType1 == "Ground":
+            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + 50:
+                self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
         
-        if tilemap.test_solid(tile_x2, tile_y) == "Wall" or tilemap.test_solid(tile_x2, tile_y) == "Ground":
-            self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - 56, self.x)
+        if tileType2 == "Wall" or tileType2 == "Ground":
+            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + 50:
+                self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - 56, self.x)
         
         #바닥
         if tilemap.test_solid(tile_x1, tile_y + 1) == "Ground" or tilemap.test_solid(tile_x2, tile_y + 1) == "Ground":

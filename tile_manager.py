@@ -21,15 +21,15 @@ for i in range(30):
 
 MAP1 = [
     "0├→→→┤├→→→┤├→→→┤├→→→┤0",
-    "0↑.┃................↓0",
-    "0↑.┃................↓0",
-    "0↑.┃................↓0",
-    "0↑.┃................↓0",
-    "0↑.┃................↓0",
-    "0↑.┃..'.............↓0",
-    "0↑.┃................↓0",
-    "0└.┴................┘0",
-    "←←←←←←←←←←←←←←←←←←←←←←←←←←←"
+    "0↑..................↓0",
+    "0↑..................↓0",
+    "0↑..................↓0",
+    "0↑..................↓0",
+    "0↑..................↓0",
+    "0↑.........'........↓0",
+    "0↑..................↓0",
+    "0└..................┘0",
+    "←←←←←←←←←←←←←←←←←←←←←←"
 ]
 
 #├ : 1, 조명 왼쪽 끝
@@ -86,6 +86,14 @@ class TileMap:
 
         self.width = len(self.map_data[0])
         self.height = len(self.map_data)
+        
+        #경사 생성
+        #for i in range(0, 10):
+        #    text = str(i)
+        #    for y, row in enumerate(self.map_data):
+        #        for x, tile in enumerate(row):
+        #            if get_tile(x, y) == text:
+        
 
     # 맵 범위 체크
     def in_bounds(self, x, y):
@@ -128,10 +136,8 @@ class TileMap:
     def draw(self, screen):
         for y, row in enumerate(self.map_data):
             for x, tile in enumerate(row):
-                index = 4
                 pos = self.tile_to_world(x, y)
                     
                 if tile != None:
                     index = TILE_INFO[tile]["index"]
-                    
-                screen.blit(tiles[index], pos)
+                    screen.blit(tiles[index], pos)
