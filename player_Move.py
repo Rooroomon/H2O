@@ -50,16 +50,25 @@ gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((100, 0, 25, 
 
 clock = pygame.time.Clock()
 
+
+TILE_SIZE = 56
+
+def check_collision(rect, tiles):
+    hit_list = []
+    for tile in tiles:
+        if rect.colliderect(tile):
+            hit_list.append(tile)
+    return hit_list
+
 class Player:
     def __init__(self):
-        self.x = 100
-        self.y = 500
-
         self.vx = 0
         self.vy = 0
 
         self.width = 56
         self.height = 56
+        
+        self.rect = pygame.Rect(150, 500, self.width, self.height)
         
         self.dir = 1
         self.land = "ground"
@@ -222,85 +231,73 @@ class Player:
                 
 
         # 중력
-        if self.state != "steam":
+        if self.state != "steam" and not self.on_ground:
             if abs(self.vy) < 0:
                 self.vy += 0.35
             else:
                 self.vy += 0.25
-        
-        self.x += self.vx
-        
-        self.y += self.vy
+                
+        self.vy = min(15, self.vy)
 
         self.on_ground = False
-
-        player_rect = pygame.Rect(
-            self.x,
-            self.y,
-            self.width,
-            self.height
-        )
+        #print(f"{self.rect.left}, ({self.rect.x}, {self.rect.y})")
         
-        #타일 충돌
-        tile_x1, tile_y = tilemap.world_to_tile(self.x, self.y)
-        tile_x2 = tilemap.world_to_tile(self.x + 54, self.y)[0]
-        tile_x1 = (int)(tile_x1)
-        tile_x2 = (int)(tile_x2)
-        tile_y = (int)(tile_y)
-        tileType1 = tilemap.test_solid(tile_x1, tile_y)
-        tileType2 = tilemap.test_solid(tile_x2, tile_y)
-
-        #print(f"({tile_x}, {tile_y + 1}) : {tilemap.test_solid(tile_x, tile_y + 1)}")
+        self.rect.x += self.vx
+        self.rect.y += self.vy
         
-        #천장
-        if tileType1 == "Ground" or tileType2 == "Ground" or tileType1 == "Wall" or tileType2 == "Wall":
-            if self.vy <= 0:
-                self.y = tilemap.tile_to_world(tile_x1, tile_y)[1] + 56
+        #지형 충돌
+        
+        # 1. X축 이동 및 충돌 처리
+        self.rect.topleft = (self.rect.x, self.rect.y)
+        Xhit_list = check_collision(self.rect, tilemap.wall_rects)
+        for tile in Xhit_list:
+            if self.vx >= 0 and self.rect.x < tile.left - 40:
+                self.vx = 0
+                self.rect.right = tile.left
+            elif self.vx <= 0 and self.rect.x > tile.right - 16:
+                self.vx = 0
+                self.rect.left = tile.right
+    
+        # 2. 바닥
+        self.rect.topleft = (self.rect.x, self.rect.y)
+        Yhit_list = check_collision(self.rect, tilemap.ground_rects)
+        for tile in Yhit_list:
+            if self.vy >= 0 and self.rect.y < tile.top - 40:
                 self.vy = 0
-                
-        #벽
-        if tileType1 == "Wall" or tileType1 == "Ground":
-            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + 50:
-                self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
-        
-        if tileType2 == "Wall" or tileType2 == "Ground":
-            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + 50:
-                self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - 56, self.x)
-        
-        #바닥
-        if tilemap.test_solid(tile_x1, tile_y + 1) == "Ground" or tilemap.test_solid(tile_x2, tile_y + 1) == "Ground":
-            if self.vy >= 0 and self.y <= tilemap.tile_to_world(tile_x1, tile_y + 1)[1] - 45:
-                self.land = "ground"
-                    
-                self.y = tilemap.tile_to_world(tile_x1, tile_y + 1)[1] - self.height
-                self.vy = 0
+                self.rect.bottom = tile.top + 1
                 self.on_ground = True
                 if self.animestate == "W_fall" or self.animestate == "W_falling":
-                    self.animestate = "W_land"
-
-                        
+                        self.animestate = "W_land"
+                
+        # 3. 천장
+        Roofhit_list = check_collision(self.rect, tilemap.roof_rects)
+        for tile in Roofhit_list:
+            if self.vy <= 0 and self.rect.y > tile.bottom - 6:
+                self.vy = 0
+                self.rect.top = tile.bottom
+            
+            
+        #경사 충돌
+        self.land = "none"
             
         for slope in slopes:
 
-            if slope.x1 <= self.x + self.width/2 <= slope.x2:
+            if slope.x1 <= self.rect.x + self.width/2 <= slope.x2:
 
-                slope_y = slope.get_y(self.x + self.width/2)
+                slope_y = slope.get_y(self.rect.x + self.width/2)
 
-                feet = self.y + self.height
+                feet = self.rect.y + self.height
 
                 # 경사 위에 착지
                 if feet >= slope_y - 5 and feet <= slope_y + 25 and self.vy >= 0:
                     self.land = "slope"
                     self.landslope = slope
 
-                    self.y = slope_y - self.height
+                    self.rect.y = slope_y - self.height
                     self.vy = 0
                     self.on_ground = True
                     if self.animestate == "W_fall" or self.animestate == "W_falling":
                         self.animestate = "W_land"
-                        
-        if self.on_ground == False:
-            self.land = "none"
 
     # =========================
     # 상태 업데이트
@@ -357,7 +354,7 @@ class Player:
     # 렌더링
     # =========================
 
-    def draw(self, screen, UIscreen, camera_x, camera_y):
+    def draw(self, screen, UIscreen, camera_x, camera_y, WIDTH, HEIGHT):
         target = []
         
         #애니메이션 선택
@@ -427,7 +424,7 @@ class Player:
             img = pygame.transform.flip(img, True, False)
             
         orig_rect = img.get_rect()
-        orig_rect.topleft = (int(self.x - camera_x + 640), int(self.y - camera_y + 360))
+        orig_rect.topleft = (int(self.rect.x - camera_x + WIDTH / 2), int(self.rect.y - camera_y + HEIGHT / 2))
             
         if self.state != "steam" and self.land == "slope":
             dx = self.landslope.x2 - self.landslope.x1
@@ -443,27 +440,28 @@ class Player:
         else:
             screen.blit(img, orig_rect)
         
-        #debug_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        #debug_rect = pygame.Rect(self.rect.x, self.rect.y, self.width, self.height)
         
-        #pygame.draw.circle(screen, (255,255,0), (self.x, self.y), 4)
+        #pygame.draw.circle(screen, (255,255,0), (self.rect.x, self.rect.y), 4)
         #pygame.draw.rect(screen, (255, 0, 0), debug_rect, 2)
         
 
         # 온도 게이지
         gauge_image = gauge_sprites[2]
         
-        if abs(self.temperature) < 50: #0근처
-            gauge_image = gauge_sprites[2]
-        elif numpy.sign(self.temperature) > 0:
-            if self.temperature >= 100:
-                gauge_image = gauge_sprites[1]  
+        if self.state == "water":
+            if abs(self.temperature) < 50: #0근처
+                gauge_image = gauge_sprites[2]
+            elif numpy.sign(self.temperature) > 0:
+                if self.temperature >= 100:
+                    gauge_image = gauge_sprites[1]  
+                else:
+                    gauge_image = gauge_sprites[0]
             else:
-                gauge_image = gauge_sprites[0]
-        else:
-            if self.temperature <= -100:
-                gauge_image = gauge_sprites[4]
-            else:
-                gauge_image = gauge_sprites[3]
+                if self.temperature <= -100:
+                    gauge_image = gauge_sprites[4]
+                else:
+                    gauge_image = gauge_sprites[3]
                 
         UIscreen.blit(gauge_image, (4, 0))
 
@@ -478,3 +476,5 @@ class Player:
         txt = font.render(f"STATE : {self.state}", True, WHITE)
 
         UIscreen.blit(txt, (80, 20))
+        
+        pygame.draw.rect(screen, (255, 0, 0), orig_rect, width=2)

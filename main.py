@@ -58,11 +58,11 @@ class TemperatureObject:
 
     def draw(self, screen, camera_x, camera_y):
         color = RED if self.kind == "hot" else CYAN
-        pygame.draw.circle(screen, color, (int(self.x - camera_x + WIDTH / 2), int(self.y - camera_y + HEIGHT / 2)), self.radius)
+        pygame.draw.circle(screen, color, (self.x - camera_x + WIDTH / 2, self.y - camera_y + HEIGHT / 2), self.radius)
 
     def affect_player(self, player):
-        dx = self.x - player.x
-        dy = self.y - player.y
+        dx = self.x - player.rect.x
+        dy = self.y - player.rect.y
         dist = math.hypot(dx, dy)
 
         if dist < self.radius + 80:
@@ -93,8 +93,8 @@ class Slope:
         pygame.draw.line(
             screen,
             (180, 180, 180),
-            (int(self.x1 - camera_x + WIDTH / 2), int(self.y1 - camera_y + HEIGHT / 2 + 4)),
-            (int(self.x2 - camera_x + WIDTH / 2), int(self.y2 - camera_y + HEIGHT / 2 + 4)),
+            (self.x1 - camera_x + WIDTH / 2, self.y1 - camera_y + HEIGHT / 2 + 4),
+            (self.x2 - camera_x + WIDTH / 2, self.y2 - camera_y + HEIGHT / 2 + 4),
             6
         )
 
@@ -184,7 +184,7 @@ class Ball:
         pygame.draw.circle(
             screen,
             (255, 200, 100),
-            (int(self.x - camera_x + WIDTH / 2), int(self.y - camera_y + HEIGHT / 2)),
+            (self.x - camera_x + WIDTH / 2, self.y - camera_y + HEIGHT / 2),
             self.radius
         )
 # =========================
@@ -206,8 +206,8 @@ class Camera:
         
 
     def update(self, width, height):
-        self.x += (player.x + player.width / 2 - self.x) * 0.05
-        self.y += (player.y - 50 - self.y) * 0.05
+        self.x += (player.rect.x + player.width / 2 - self.x) * 0.05
+        self.y += (player.rect.y - 50 - self.y) * 0.05
         
 camera = Camera()
 
@@ -268,14 +268,14 @@ while running:
     #초기화
     window_width, window_height = pygame.display.get_surface().get_size()
     
+    camera.update(window_width, window_height)
+    
     game_surface.fill(GRAY)
     UI_surface.fill((0, 0, 0, 0))
 
     
-    tilemap.draw(game_surface, camera.x, camera.y)
+    tilemap.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
     
-    #카메라 이동
-    camera.update(window_width, window_height)
 
     # 오브젝트
     for obj in objects:
@@ -283,7 +283,7 @@ while running:
         
 
     # 플레이어
-    player.draw(game_surface, UI_surface, camera.x, camera.y)
+    player.draw(game_surface, UI_surface, camera.x, camera.y, WIDTH, HEIGHT)
     
     for slope in slopes:
         slope.draw(game_surface, camera.x, camera.y)
@@ -295,8 +295,6 @@ while running:
     #최종 출력 ====  
     screen.fill(GRAY)
     
-    
-    
     scale = min(window_width / WIDTH, window_height / HEIGHT)
     scaled_width = int(WIDTH * scale)
     scaled_height = int(HEIGHT * scale)
@@ -304,7 +302,7 @@ while running:
     pygame.transform.scale(game_surface, (scaled_width, scaled_height), scaled_surface)
     screen.blit(scaled_surface, ((window_width - scaled_width)/2, (window_height - scaled_height)/2))
     #screen.blit(scaled_surface, (-(camera.x * scale - window_width // 2), -(camera.y * scale - window_height // 2)))
-    #screen.blit(game_surface, (-(camera.x - window_width // 2), -(camera.y - window_height // 2)))
+    #screen.blit(game_surface, (0, 0))
     
     screen.blit(UI_surface, (0, 0))
     
