@@ -1,4 +1,5 @@
 import pygame
+from scripts.slope import Slope
 
 # =========================
 # 파일 로드
@@ -29,11 +30,11 @@ MAP1 = [
     "X0↑..................↓0XX",
     "X0↑..................↓0XX",
     "X0↑..................↓0XX",
-    "X0↑..................↓000",
-    "S#↑..................↓GX0",
-    "X#↑.........'........↓XX0",
-    "X#↑..................↓XX0",
-    "X#↑..................┘XX0",
+    "X0↑..................↓@^0",
+    "S▒↑...............1..↓GC0",
+    "X▒↑.........'1.......↓CC0",
+    "X▒↑..................↓CC0",
+    "X▒↑..................┘CC0",
     "←←←←←←←←←←←←←←←←←←←←←←←←0"
 ]
 
@@ -68,8 +69,13 @@ Map_List = [MAP1, MAP2, MAP3]
 #』 : 27, 발판 오른쪽 끝
 #S : 개별, 시작점
 #G : 개별, 골
-#X : 빈칸
-## : 투명 배리어
+#C : X, 클리어 판정 범위
+#X : X, 빈칸
+#▒ : X, 투명 벽
+#^ : X, 투명 천장
+#~ : X, 투명 발판
+#@ : X, 투명 블럭 (모든 물리 판정)
+
 
 TILE_INFO = {
     "├": {"index": 1, "solid": "Roof"},
@@ -100,8 +106,22 @@ TILE_INFO = {
     
     "S": {"index": 4, "solid": "None"},
     "G": {"index": 4, "solid": "None"},
-    "X": {"index": 4, "solid": "None"},
-    "#": {"index": 4, "solid": "Wall"},
+    "X": {"index": -1, "solid": "None"},
+    "C": {"index": -1, "solid": "None"},
+    "▒": {"index": -1, "solid": "Wall"},
+    "^": {"index": -1, "solid": "Roof"},
+    "~": {"index": -1, "solid": "Ground"},
+    "@": {"index": -1, "solid": "All"},
+    
+    "1": {"index": 8, "solid": "None"},
+    "2": {"index": 8, "solid": "None"},
+    "3": {"index": 8, "solid": "None"},
+    "4": {"index": 8, "solid": "None"},
+    "5": {"index": 8, "solid": "None"},
+    "6": {"index": 8, "solid": "None"},
+    "7": {"index": 8, "solid": "None"},
+    "8": {"index": 8, "solid": "None"},
+    "9": {"index": 8, "solid": "None"},
 }
 
 def get_wall(index):
@@ -110,27 +130,54 @@ def get_wall(index):
     wall_rects = []
     for y, row in enumerate(map_data):
         for x, tile in enumerate(row):
-            if TILE_INFO[tile]["solid"] == "Wall":
+            if TILE_INFO[tile]["solid"] == "Wall" or TILE_INFO[tile]["solid"] == "All":
                 wall_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
     
     ground_rects = []
     for y, row in enumerate(map_data):
         for x, tile in enumerate(row):
-            if TILE_INFO[tile]["solid"] == "Ground":
+            if TILE_INFO[tile]["solid"] == "Ground" or TILE_INFO[tile]["solid"] == "All":
                 ground_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 
     roof_rects = []
     for y, row in enumerate(map_data):
         for x, tile in enumerate(row):
-            if TILE_INFO[tile]["solid"] == "Roof":
+            if TILE_INFO[tile]["solid"] == "Roof" or TILE_INFO[tile]["solid"] == "All":
                 roof_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
                 
-    return wall_rects, ground_rects, roof_rects
+    clear_rects = []
+    for y, row in enumerate(map_data):
+        for x, tile in enumerate(row):
+            if tile == "C":
+                clear_rects.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+                
+    return wall_rects, ground_rects, roof_rects, clear_rects
+
+def get_slopePair(target, y, x):
+    found_pair = None
+        
+    # 현재 위치 이후부터 탐색
+    for yy in range(y, len(MAP1)):
+        start_x = x + 1 if yy == y else 0
+        
+        for xx in range(start_x, len(MAP1[yy])):
+            if MAP1[yy][xx] == target:
+                
+                if x < xx:
+                    xx += 1
+                    return Slope(x * 64, y * 64, xx * 64, yy * 64)
+                else:
+                    x += 1
+                    return Slope(xx * 64, yy * 64, x * 64, y * 64)
+                    
+                
+    
+    return None
 
 class TileMap:
     def __init__(self):
         self.map_data = MAP1
-        self.wall_rects, self.ground_rects, self.roof_rects = get_wall(0)
+        self.wall_rects, self.ground_rects, self.roof_rects, self.clear_rects = get_wall(0)
 
         self.width = len(self.map_data[0])
         self.height = len(self.map_data)
@@ -142,7 +189,25 @@ class TileMap:
         #        for x, tile in enumerate(row):
         #            if get_tile(x, y) == text:
         
-    
+    def change_map(self, index):
+        self.map_data = Map_List[index]
+        self.wall_rects, self.ground_rects, self.roof_rects, self.clear_rects = get_wall(0)
+        found = 0b0
+        slope_List = []
+        
+        for y, row in enumerate(self.map_data):
+            for x, ch in enumerate(row):
+                if ch.isdigit() and ch != "0" and found & (0b1<<int(ch)) == 0:   # 1~9 발견
+                    
+                    found |= (0b1<<int(ch))
+                    result = get_slopePair(ch, y, x)
+                    
+                    if result != None:
+                        slope_List.append(result)
+                        
+        return slope_List
+                    
+        
 
     # 맵 범위 체크
     def in_bounds(self, x, y):
@@ -200,11 +265,14 @@ class TileMap:
                 
                 tile = self.map_data[y][x]
     
-                if tile is None or tile == "X" or tile == "#":
+                if tile is None:
+                    continue
+                
+                if tiles[TILE_INFO[tile]["index"]] == -1:
                     continue
                 
                 image = tiles[4]
-                if tile == "S" or tile == "G":
+                if tile == "S" or tile == "G": # 시작, 골 지점
                     image = Start_Sprite if tile == "S" else Goal_Sprite
                 else:
                     image = tiles[TILE_INFO[tile]["index"]]

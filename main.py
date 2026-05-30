@@ -1,7 +1,9 @@
 import pygame, math, numpy
-from player_Move import Player
 from pyvidplayer2 import Video
-from tile_manager import TileMap
+
+from scripts.player_Move import Player
+from scripts.ball_Move import Ball
+from scripts.tile_manager import TileMap
 
 
 pygame.init()
@@ -78,115 +80,8 @@ objects = [
     TemperatureObject(850, 330, 30, "cold"),
 ]
 
-# =========================
-# 경사
-# =========================
-class Slope:
-    def __init__(self, x1, y1, x2, y2):
-        self.x1 = x1
-        self.y1 = y1
-
-        self.x2 = x2
-        self.y2 = y2
-
-    def draw(self, screen, camera_x, camera_y):
-        pygame.draw.line(
-            screen,
-            (180, 180, 180),
-            (self.x1 - camera_x + WIDTH / 2, self.y1 - camera_y + HEIGHT / 2 + 4),
-            (self.x2 - camera_x + WIDTH / 2, self.y2 - camera_y + HEIGHT / 2 + 4),
-            6
-        )
-
-    def get_y(self, x):
-
-        # x 위치에 따른 경사 y 계산
-        t = (x - self.x1) / (self.x2 - self.x1)
-
-        return self.y1 + (self.y2 - self.y1) * t
 
 
-# =========================
-# 공
-# =========================
-class Ball:
-    def __init__(self, x, y, radius):
-        self.x = x
-        self.y = y
-
-        self.radius = radius
-
-        self.vx = 0
-        self.vy = 0
-
-    def update(self):
-
-        # 중력
-        self.vy += 0.4
-
-        self.x += self.vx
-        self.y += self.vy
-        
-        # 경사 충돌    
-        for slope in slopes:
-
-            if slope.x1 <= self.x <= slope.x2:
-
-                slope_y = slope.get_y(self.x)
-
-                feet = self.y + self.radius
-
-                if feet >= slope_y and feet <= slope_y + 15:
-
-                    self.y = slope_y - self.radius
-
-                    self.vy = 0
-
-                    # 경사 방향 계산
-                    dx = slope.x2 - slope.x1
-                    dy = slope.y2 - slope.y1
-
-                    angle = math.atan2(dy, dx)
-
-                    # 경사 따라 굴러감
-                    self.vx += math.cos(angle) * 0.5 * numpy.sign(angle)
-                    
-                    
-        tile_x1, tile_y = tilemap.world_to_tile(self.x, self.y)
-        tile_x2 = tilemap.world_to_tile(self.x + 50, self.y)[0]
-        tile_x1 = (int)(tile_x1)
-        tile_x2 = (int)(tile_x2)
-        tile_y = (int)(tile_y)
-        tileType1 = tilemap.test_solid(tile_x1, tile_y)
-        tileType2 = tilemap.test_solid(tile_x2, tile_y)
-                    
-        #벽
-        if tileType1 == "Wall" or tileType1 == "Ground":
-            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + self.radius * 2 - 5:
-                self.x = max(tilemap.tile_to_world(tile_x1, tile_y)[0] + 56, self.x)
-        
-        if tileType2 == "Wall" or tileType2 == "Ground":
-            if self.y <= tilemap.tile_to_world(tile_x1, tile_y)[1] + self.radius * 2 - 5:
-                self.x = min(tilemap.tile_to_world(tile_x2, tile_y)[0] - self.radius * 2, self.x)
-        
-        #바닥
-        if tilemap.test_solid(tile_x1, tile_y) == "Ground" or tilemap.test_solid(tile_x2, tile_y) == "Ground":
-            if self.vy >= 0:
-                self.y = tilemap.tile_to_world(tile_x1, tile_y)[1] - self.radius - 1
-                self.vy = 0
-
-
-        # 마찰
-        self.vx *= 0.99
-
-    def draw(self, screen, camera_x, camera_y):
-
-        pygame.draw.circle(
-            screen,
-            (255, 200, 100),
-            (self.x - camera_x + WIDTH / 2, self.y - camera_y + HEIGHT / 2),
-            self.radius
-        )
 # =========================
 # 플레이어
 # =========================
@@ -214,10 +109,7 @@ camera = Camera()
 # ==================================================
 # 맵
 # ==================================================
-slopes = [
-    Slope(200, 600, 500, 450),
-    Slope(700, 500, 1000, 600),
-]
+slopes = []
 
 balls = [
     Ball(300, 100, 20)
@@ -227,7 +119,7 @@ tilemap = TileMap()
 # =========================
 # 메인 루프
 # =========================
-
+a = 0
 running = True
 
 while running:
@@ -248,7 +140,12 @@ while running:
     # =====================
     # 업데이트
     # =====================
-
+    a += dt
+    if a // 1000 == 5:
+        a = 10000000
+        slopes = tilemap.change_map(0)
+        print(f"{slopes[0].x1}, {slopes[0].x2}")
+        
     player.input()
 
     for obj in objects:
@@ -259,7 +156,7 @@ while running:
     player.update_state()
     
     for ball in balls:
-        ball.update()
+        ball.update(slopes, tilemap)
 
     # =====================
     # 렌더링
@@ -286,10 +183,10 @@ while running:
     player.draw(game_surface, UI_surface, camera.x, camera.y, WIDTH, HEIGHT)
     
     for slope in slopes:
-        slope.draw(game_surface, camera.x, camera.y)
+        slope.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
 
     for ball in balls:
-        ball.draw(game_surface, camera.x, camera.y)
+        ball.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
     
     
     #최종 출력 ====  

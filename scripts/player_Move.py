@@ -1,5 +1,5 @@
 import pygame, math, numpy
-from tile_manager import TileMap
+from scripts.tile_manager import TileMap
 
 # =========================
 # 색상
@@ -476,5 +476,3 @@ class Player:
         txt = font.render(f"STATE : {self.state}", True, WHITE)
 
         UIscreen.blit(txt, (80, 20))
-        
-        pygame.draw.rect(screen, (255, 0, 0), orig_rect, width=2)
