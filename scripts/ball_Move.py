@@ -23,24 +23,49 @@ class Ball:
         
         self.vy = min(15, self.vy)
         
+        prev_rect = self.rect.copy()
+        
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+        
         #지형 충돌
+        collide_list = check_collision(self.rect, tilemap.wall_rects)
+        side = set()
+
+        for rect in collide_list:
+            overlap = self.rect.clip(rect)
+
+            if overlap.width > 0 and overlap.height > 0:
+                if overlap.width < overlap.height:
+                    # 좌우 충돌
+                    if self.rect.centerx < rect.centerx:
+                        side.add("right")   # rect1의 오른쪽 면이 rect2에 닿음
+                    else:
+                        side.add("left")
+                else:
+                    # 상하 충돌
+                    if self.rect.centery < rect.centery:
+                        side.add("bottom")  # rect1의 아래쪽 면이 rect2에 닿음
+                    else:
+                        side.add("top")
+
         
         # 1. X축 이동 및 충돌 처리
         self.rect.topleft = (self.rect.x, self.rect.y)
         Xhit_list = check_collision(self.rect, tilemap.wall_rects)
         for tile in Xhit_list:
-            if self.vx >= 0 and self.rect.x < tile.left - 20:
+            if self.vx >= 0 and self.rect.x < tile.left - 20 and "right" in side:
                 self.vx = 0
                 self.rect.right = tile.left
-            elif self.vx <= 0 and self.rect.x > tile.right - 8:
+            elif self.vx <= 0 and self.rect.x > tile.right - 8 and "left" in side:
                 self.vx = 0
                 self.rect.left = tile.right
     
         # 2. 바닥
         self.rect.topleft = (self.rect.x, self.rect.y)
-        Yhit_list = check_collision(self.rect, tilemap.ground_rects)
+        Yhit_list = check_collision(self.rect, tilemap.wall_rects)
         for tile in Yhit_list:
-            if self.vy >= 0 and self.rect.y < tile.top - 20:
+            if self.vy >= 0 and self.rect.y < tile.top - 20 and "bottom" in side:
                 self.vy = 0
                 self.rect.bottom = tile.top + 1
 
@@ -68,11 +93,6 @@ class Ball:
 
                     # 경사 따라 굴러감
                     self.vx += math.cos(angle) * 0.5 * numpy.sign(angle)
-                    
-        
-        self.rect.x += self.vx
-        self.rect.y += self.vy
-
 
         # 마찰
         self.vx *= 0.99

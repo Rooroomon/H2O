@@ -15,8 +15,8 @@ class Slope:
         pygame.draw.line(
             screen,
             (180, 180, 180),
-            (self.x1 - camera_x + WIDTH / 2, self.y1 - camera_y + HEIGHT / 2 + 4),
-            (self.x2 - camera_x + WIDTH / 2, self.y2 - camera_y + HEIGHT / 2 + 4),
+            (self.x1 - camera_x + WIDTH / 2, self.y1 - camera_y + HEIGHT / 2 + 2),
+            (self.x2 - camera_x + WIDTH / 2, self.y2 - camera_y + HEIGHT / 2 + 2),
             6
         )
 

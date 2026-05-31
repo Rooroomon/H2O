@@ -144,7 +144,6 @@ while running:
     if a // 1000 == 5:
         a = 10000000
         slopes = tilemap.change_map(0)
-        print(f"{slopes[0].x1}, {slopes[0].x2}")
         
     player.input()
 
