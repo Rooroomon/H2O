@@ -155,18 +155,21 @@ class Player:
             # 물
             # ---------------------
             if self.state == "water":
-                speed = 4
+                accel = 0.75
+                max_speed = 4
     
                 if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-                    self.vx = -speed
+                    self.vx -= accel
                     if self.on_ground:
                         self.animestate = "W_walk"
                 elif keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-                    self.vx = speed
+                    self.vx += accel
                     if self.on_ground:
                         self.animestate = "W_walk"
                 else:
-                    self.vx *= 0.6
+                    self.vx *= 0.75
+                    
+                self.vx = max(-max_speed, min(max_speed, self.vx))
     
                 # 점프
                 if keys[pygame.K_SPACE] and self.on_ground:

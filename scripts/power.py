@@ -1,0 +1,59 @@
+import pygame
+from scripts.electro import Electro_Object
+
+# =========================
+# 파일 로드
+# =========================
+sheet = pygame.image.load("./assets/Sprite/Electronic_Sheet.png")
+
+# =========================
+# 스프라이트 설정
+# =========================
+sprites = []
+TILE_SIZE = 64
+
+sprites.append(pygame.transform.scale(sheet.subsurface((0, 0, 8, 8)), (TILE_SIZE, TILE_SIZE))) #배터리
+sprites.append(pygame.transform.scale(sheet.subsurface((0, 8, 8, 8)), (TILE_SIZE, TILE_SIZE))) #빛 감지기
+sprites.append(pygame.transform.scale(sheet.subsurface((0, 16, 8, 8)), (TILE_SIZE, TILE_SIZE))) #발판 OFF
+sprites.append(pygame.transform.scale(sheet.subsurface((8, 16, 8, 8)), (TILE_SIZE, TILE_SIZE))) #발판 ON
+
+class PowerSource:
+    def __init__(self, x, y, type): #타입 종류: battery, detector, plate
+        self.rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+        self.type = type
+        self.target = None
+        self.isOn = False
+        
+    def update(self, player_rect, player_state, player):
+        self.isOn = False
+        
+        if self.type == "battery":
+            self.isOn = True
+        elif self.type == "detector":
+            self.isOn = True #이거 조건 정해야 됨
+        elif self.type == "plate":
+            if self.rect.colliderect(player_rect) and player_state != "steam":
+                self.isOn = True
+                
+        if self.isOn and self.target != None:
+            self.target.update(player, player_rect)
+            
+        
+    def draw(self, screen, camera_x, camera_y, WIDTH, HEIGHT):
+        sprite_index = 0
+        
+        if self.type == "battery":
+            sprite_index = 0
+        elif self.type == "detector" and self.isOn:
+            sprite_index = 1
+        elif self.type == "plate":
+            if self.isOn:
+                sprite_index = 3
+            else:
+                sprite_index = 2
+            
+            
+        screen.blit(sprites[sprite_index], (self.rect.x - camera_x + WIDTH / 2, self.rect.y - camera_y + HEIGHT / 2))
+        
+        if self.target != None:
+            self.target.draw(screen, camera_x, camera_y, WIDTH, HEIGHT, self.isOn)

@@ -4,6 +4,9 @@ from pyvidplayer2 import Video
 from scripts.player_Move import Player
 from scripts.ball_Move import Ball
 from scripts.tile_manager import TileMap
+from scripts.menu import Menu
+from scripts.electro import Electro_Object
+from scripts.temperature import TemperatureObject
 
 
 pygame.init()
@@ -12,7 +15,7 @@ pygame.init()
 # 파일 로드
 # =========================
 icon = pygame.image.load("./assets/Sprite/Icon.png")
-#video = Video("./assets/Start_Animation.mp4")
+video = Video("./assets/Start_Animation.mp4")
 
 # =========================
 # 설정
@@ -41,45 +44,8 @@ font = pygame.font.SysFont(None, 30)
 WHITE = (255, 255, 255)
 BLACK = (30, 30, 30)
 
-RED = (255, 100, 100)
-CYAN = (100, 255, 255)
-
 GROUND = (90, 90, 90)
 GRAY = (161, 161, 161)
-
-# =========================
-# 온도 오브젝트
-# =========================
-
-class TemperatureObject:
-    def __init__(self, x, y, radius, kind):
-        self.x = x
-        self.y = y
-        self.radius = radius
-        self.kind = kind  # "hot" or "cold"
-
-    def draw(self, screen, camera_x, camera_y):
-        color = RED if self.kind == "hot" else CYAN
-        pygame.draw.circle(screen, color, (self.x - camera_x + WIDTH / 2, self.y - camera_y + HEIGHT / 2), self.radius)
-
-    def affect_player(self, player):
-        dx = self.x - player.rect.x
-        dy = self.y - player.rect.y
-        dist = math.hypot(dx, dy)
-
-        if dist < self.radius + 80:
-            if self.kind == "hot":
-                player.temperature += 0.5
-            else:
-                player.temperature -= 0.5
-            player.temp_clock = 0
-
-
-objects = [
-    TemperatureObject(450, 430, 30, "hot"),
-    TemperatureObject(850, 330, 30, "cold"),
-]
-
 
 
 # =========================
@@ -115,15 +81,22 @@ balls = [
     Ball(300, 100, 20)
 ]
 
+powers = []
+
+objects = []
+
 tilemap = TileMap()
+menu = Menu(WIDTH, HEIGHT)
 # =========================
 # 메인 루프
 # =========================
-a = 0
+state = "Title" #"Title", "Stage"
+canMove = True
 running = True
 
 while running:
     dt = clock.tick(FPS)
+    button_interaction = "None"
 
     for event in pygame.event.get():
 
@@ -136,78 +109,94 @@ while running:
             
             scale = min(window_width / WIDTH, window_height / HEIGHT)
             scaled_surface = pygame.Surface((int(WIDTH * scale), int(HEIGHT * scale)))
+            menu.change_scale(window_width, window_height)
+        
+        if state == "Title" and canMove:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button_interaction = menu.menu_button(event, "down")
+            elif event.type == pygame.MOUSEBUTTONUP:
+                button_interaction = menu.menu_button(event, "up")
+
+    #초기화
+    window_width, window_height = pygame.display.get_surface().get_size()
+
+    game_surface.fill(GRAY)
+    UI_surface.fill((0, 0, 0, 0))
+    screen.fill(GRAY)
         
     # =====================
     # 업데이트
     # =====================
-    a += dt
-    if a // 1000 == 5:
-        a = 10000000
-        slopes = tilemap.change_map(0)
-        
-    player.input()
+    if state == "Stage":
+        if canMove:
+            player.input()
 
-    for obj in objects:
-        obj.affect_player(player)
+        for obj in objects:
+            obj.affect_player(player)
 
-    player.physics(slopes, tilemap)
+        player.physics(slopes, tilemap)
 
-    player.update_state()
-    
-    for ball in balls:
-        ball.update(slopes, tilemap)
+        player.update_state()
 
+        for ball in balls:
+            ball.update(slopes, tilemap)
+
+        for object in powers:
+            object.update(player.rect, player.state, player)
     # =====================
     # 렌더링
     # =====================
+        camera.update(window_width, window_height)
     
-    #초기화
-    window_width, window_height = pygame.display.get_surface().get_size()
-    
-    camera.update(window_width, window_height)
-    
-    game_surface.fill(GRAY)
-    UI_surface.fill((0, 0, 0, 0))
+        tilemap.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
 
-    
-    tilemap.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
-    
 
-    # 오브젝트
-    for obj in objects:
-        obj.draw(game_surface, camera.x, camera.y)
+        # 온도 오브젝트
+        for obj in objects:
+            obj.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
+
+        for slope in slopes:
+            slope.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
+
+        for ball in balls:
+            ball.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
+
+        for object in powers:
+            object.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
+
+        player.draw(game_surface, UI_surface, camera.x, camera.y, WIDTH, HEIGHT)
         
-
-    # 플레이어
-    player.draw(game_surface, UI_surface, camera.x, camera.y, WIDTH, HEIGHT)
+        scale = min(window_width / WIDTH, window_height / HEIGHT)
+        scaled_width = int(WIDTH * scale)
+        scaled_height = int(HEIGHT * scale)
+        
+        pygame.transform.scale(game_surface, (scaled_width, scaled_height), scaled_surface)
+        screen.blit(scaled_surface, ((window_width - scaled_width)/2, (window_height - scaled_height)/2))
+        #screen.blit(scaled_surface, (-(camera.x * scale - window_width // 2), -(camera.y * scale - window_height // 2)))
+        #screen.blit(game_surface, (0, 0))
     
-    for slope in slopes:
-        slope.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
-
-    for ball in balls:
-        ball.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
-    
+        screen.blit(UI_surface, (0, 0))
+    else:
+        menu.draw(screen, window_width, window_height)
+        
+        if button_interaction == "start":
+            slopes, powers, objects = tilemap.change_map(0) #맵 이동
+            state = "Stage"
+            canMove = True
+        elif button_interaction == "quit":
+            running = False
+            
     
     #최종 출력 ====  
-    screen.fill(GRAY)
     
-    scale = min(window_width / WIDTH, window_height / HEIGHT)
-    scaled_width = int(WIDTH * scale)
-    scaled_height = int(HEIGHT * scale)
     
-    pygame.transform.scale(game_surface, (scaled_width, scaled_height), scaled_surface)
-    screen.blit(scaled_surface, ((window_width - scaled_width)/2, (window_height - scaled_height)/2))
-    #screen.blit(scaled_surface, (-(camera.x * scale - window_width // 2), -(camera.y * scale - window_height // 2)))
-    #screen.blit(game_surface, (0, 0))
     
-    screen.blit(UI_surface, (0, 0))
     
     #테스트 프레임
     fps = clock.get_fps()
 
     # 글자 Surface 생성
     fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
-    #fps_text = font.render(f"Window_Scale: {window_width} {window_height}", True, (255, 255, 255))'
     
     # 화면 크기에 맞춰 비디오 렌더링 =======================================
     #video.draw(screen, (window_width - 1680, window_height - 1260, 1680, 1260))

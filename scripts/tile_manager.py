@@ -1,18 +1,23 @@
 import pygame
 from scripts.slope import Slope
+from scripts.electro import Electro_Object
+from scripts.power import PowerSource
+from scripts.temperature import TemperatureObject
 
 # =========================
 # 파일 로드
 # =========================
 tile_sheet = pygame.image.load("./assets/Sprite/Tile_Sheet.png")
-Goal_Sprite = pygame.image.load("./assets/Sprite/Goal.png")
-Start_Sprite = pygame.image.load("./assets/Sprite/StartPoint.png")
+electro_sheet = pygame.image.load("./assets/Sprite/Electronic_Sheet.png")
+goal_sprite = pygame.image.load("./assets/Sprite/Goal.png")
+start_sprite = pygame.image.load("./assets/Sprite/StartPoint.png")
 
 
 # =========================
 # 스프라이트 설정
 # =========================
 tiles = []
+wires = []
 FRAME_W, FRAME_H = 8, 8
 COLS = 6
 TILE_SIZE = 64
@@ -22,8 +27,15 @@ for i in range(30):
     rect = pygame.Rect(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
     tiles.append(pygame.transform.scale(tile_sheet.subsurface(rect), (TILE_SIZE, TILE_SIZE)))
     
-Goal_Sprite = pygame.transform.scale(Goal_Sprite, (TILE_SIZE * 3, TILE_SIZE * 5))
-Start_Sprite = pygame.transform.scale(Start_Sprite, (TILE_SIZE * 2, TILE_SIZE * 5))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((8, 0, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((16, 0, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((24, 0, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((8, 8, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((16, 8, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+wires.append(pygame.transform.scale(electro_sheet.subsurface((24, 8, 8, 8)), (TILE_SIZE, TILE_SIZE)))
+    
+goal_sprite = pygame.transform.scale(goal_sprite, (TILE_SIZE * 3, TILE_SIZE * 5))
+start_sprite = pygame.transform.scale(start_sprite, (TILE_SIZE * 2, TILE_SIZE * 5))
 
 #├ : 1, 조명 왼쪽 끝
 #→ : 2, 조명 중간
@@ -48,31 +60,74 @@ Start_Sprite = pygame.transform.scale(Start_Sprite, (TILE_SIZE * 2, TILE_SIZE * 
 #G : 개별, 골
 #C : X, 클리어 판정 범위
 #X : X, 빈칸
-#▒ : X, 투명 벽
+## : X, 투명 벽
+
+#특수 오브젝트
+#H, C : 온도 오브젝트
+#B : 배터리
+#D : 빛 감지기
+#P : 발판
+#┌┐└┘─│ : 전선
 
 MAP1 = [
-    "X▒├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤▒XX",
-    "X▒↑......┬.........┬......↓▒XX",
-    "X▒↑......│.........│......↓▒XX",
-    "X▒↑......│.........│......↓▒XX",
-    "X▒↑......│....←←←←.│......↓▒▒▒",
-    "S▒↑......│....0000.│......↓GC▒",
-    "X▒↑......│....0000.│......↓CC▒",
-    "X▒↑......┴....0000.│......↓CC▒",
-    "X▒↑....←←←←...0000.┴......┘CC▒",
-    "←←←←←←←▒▒▒▒←←←0000←←←←←←←←←←←▒"
+    "X#├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤#XX",
+    "X#↑......┬.........┬.........┬.↓#XX",
+    "X#↑......│.........│.........│.↓#XX",
+    "X#↑......│.........│.........│.↓#XX",
+    "X#↑......│....←←←←←←←←.......│.↓###",
+    "S#↑......│....00000000.......│.↓GC#",
+    "X#↑......│....00000000.......│.↓CC#",
+    "X#↑......┴....00000000.......│.↓CC#",
+    "X#↑....←←←←...00000000.......┴.┘CC#",
+    "←←←←←←←####←←←00000000←←←←←←←←←←←←#",
+]
+Special1 = [
+    "...................................",
+    "...................................",
+    ".........................←B........",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "............H......................",
+    "...................................",
 ]
 
 MAP2 = [
     "0├→→→┤├→→→┤├→→→┤├→→→┤0",
 ]
+Special2 = [
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",]
 
 MAP3 = [
     "0├→→→┤├→→→┤├→→→┤├→→→┤0",
 ]
+Special3 = [
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",
+    "...................................",]
+
 
 Map_List = [MAP1, MAP2, MAP3]
 
+Special_List = [Special1, Special2, Special3]
 
 TILE_INFO = {
     "├": {"index": 1, "solid": "Wall"},
@@ -105,7 +160,7 @@ TILE_INFO = {
     "G": {"index": 4, "solid": "None"},
     "X": {"index": -1, "solid": "None"},
     "C": {"index": -1, "solid": "None"},
-    "▒": {"index": -1, "solid": "Wall"},
+    "#": {"index": -1, "solid": "Wall"},
     
     "1": {"index": 8, "solid": "None"},
     "2": {"index": 8, "solid": "None"},
@@ -152,23 +207,28 @@ def get_slopePair(target, y, x):
                     x += 1
                     return Slope(xx * 64, yy * 64, x * 64, y * 64)
                     
-                
+    return None        
+        
     
-    return None
 
 class TileMap:
     def __init__(self):
         self.map_data = MAP1
+        self.special_data = Special1
         self.wall_rects, self.clear_rects = get_wall(0)
+        self.wire_index = []
 
         self.width = len(self.map_data[0])
         self.height = len(self.map_data)
         
     def change_map(self, index):
         self.map_data = Map_List[index]
+        self.special_data = Special_List[index]
         self.wall_rects, self.clear_rects = get_wall(0)
         found = 0b0
         slope_List = []
+        power_List = []
+        temp_List = []
         
         for y, row in enumerate(self.map_data):
             for x, ch in enumerate(row):
@@ -180,7 +240,29 @@ class TileMap:
                     if result != None:
                         slope_List.append(result)
                         
-        return slope_List
+        for y, row in enumerate(self.special_data):
+            for x, tile in enumerate(row):
+                if tile == "B":
+                    object = PowerSource(x * TILE_SIZE, y * TILE_SIZE, "battery")
+                    self.set_target(object)
+                    power_List.append(object)
+                elif tile == "D":
+                    object = PowerSource(x * TILE_SIZE, y * TILE_SIZE, "detector")
+                    self.set_target(object)
+                    power_List.append(object)
+                elif tile == "P":
+                    object = PowerSource(x * TILE_SIZE, y * TILE_SIZE, "plate")
+                    self.set_target(object)
+                    power_List.append(object)
+                elif tile == "H":
+                    object = TemperatureObject(x * TILE_SIZE, y * TILE_SIZE, "hot")
+                    temp_List.append(object)
+                elif tile == "C":
+                    object = TemperatureObject(x * TILE_SIZE, y * TILE_SIZE, "cold")
+                    temp_List.append(object)
+                    
+                        
+        return slope_List, power_List, temp_List
                     
         
 
@@ -189,24 +271,25 @@ class TileMap:
         return 0 <= x < self.width and 0 <= y < self.height
 
     # 특정 타일 가져오기
-    def get_tile(self, x, y):
+    def get_tile(self, type, x, y):
+        x = int(x)
+        y = int(y)
         if not self.in_bounds(x, y):
             return None
-
-        return self.map_data[y][x]
+        
+        if type == "map":
+            return self.map_data[y][x]
+        else:
+            return self.special_data[y][x]
 
     # 벽, 바닥 확인
     def test_solid(self, x, y):
-        tile = self.get_tile(x, y)
+        tile = self.get_tile("map", x, y)
 
         if tile is None:
             return "None"
         
         return TILE_INFO[tile]["solid"]
-    
-    # 목표지점인지
-    def is_goal(self, x, y):
-        return self.get_tile(x, y) == "G"
 
     # 타일 -> 픽셀
     def tile_to_world(self, x, y):
@@ -221,6 +304,44 @@ class TileMap:
             px // TILE_SIZE,
             py // TILE_SIZE
         )
+    
+    def set_target(self, power): #전력원에서 이어진 오브젝트 탐색
+        x = power.rect.x
+        y = power.rect.y
+        visited = [pygame.math.Vector2((x//TILE_SIZE), (y//TILE_SIZE))]
+        now_pos = pygame.math.Vector2((x//TILE_SIZE), (y//TILE_SIZE))
+        finding_pos = now_pos + pygame.math.Vector2(0, 1)
+        first = now_pos.copy()
+        second = now_pos - pygame.math.Vector2(0, 1)
+
+        while(first != second):
+            for dir in [pygame.math.Vector2(0, 1), pygame.math.Vector2(1, 0), pygame.math.Vector2(0, -1), pygame.math.Vector2(-1, 0)]:
+                finding_pos = now_pos + dir
+
+                if finding_pos in visited:
+                    continue
+                
+                tile = self.get_tile("special", finding_pos.x, finding_pos.y)
+                if tile in ["┌", "┐", "└", "┘", "─", "│"]: #이어진 전선 찾음
+                    visited.append(finding_pos.copy())
+                    now_pos += dir
+                    break
+                elif tile in ["↑", "→", "↓", "←"]: #선풍기 찾음
+                    if tile == "↑":
+                        power.target = Electro_Object(finding_pos.x * TILE_SIZE, finding_pos.y * TILE_SIZE, "fan", "up")
+                        return
+                    elif tile == "→":
+                        power.target = Electro_Object(finding_pos.x * TILE_SIZE, finding_pos.y * TILE_SIZE, "fan", "right")
+                        return
+                    elif tile == "↓":
+                        power.target = Electro_Object(finding_pos.x * TILE_SIZE, finding_pos.y * TILE_SIZE, "fan", "down")
+                        return
+                    elif tile == "←":
+                        power.target = Electro_Object(finding_pos.x * TILE_SIZE, finding_pos.y * TILE_SIZE, "fan", "left")
+                        return
+            second = first.copy()
+            first = finding_pos.copy()
+    
     
     def draw(self, screen, camera_x, camera_y, SCREEN_W, SCREEN_H):
         # 카메라 기준 화면 시작 위치
@@ -239,26 +360,45 @@ class TileMap:
             for x in range(first_tile_x, last_tile_x):
                 
                 tile = self.map_data[y][x]
-    
-                if tile is None:
-                    continue
+                special_tile = self.special_data[y][x]
                 
-                if tiles[TILE_INFO[tile]["index"]] == -1:
-                    continue
-                
-                image = tiles[4]
-                if tile == "S" or tile == "G": # 시작, 골 지점
-                    image = Start_Sprite if tile == "S" else Goal_Sprite
-                else:
-                    image = tiles[TILE_INFO[tile]["index"]]
-    
                 # 월드 좌표
                 world_x, world_y = self.tile_to_world(x, y)
     
                 # 카메라 적용한 화면 좌표
                 screen_x = world_x - start_x
                 screen_y = world_y - start_y
+                
+                map_image = tiles[4]
+                wire_image = None
+                if tile != None and tiles[TILE_INFO[tile]["index"]] != -1:
+                    if tile == "S" or tile == "G": # 시작, 골 지점
+                        map_image = start_sprite if tile == "S" else goal_sprite
+                    else:
+                        map_image = tiles[TILE_INFO[tile]["index"]]
+                        
+                    screen.blit(map_image, (screen_x, screen_y))
+                
+                if special_tile != None:
+                    if special_tile == "┌":
+                        wire_image = wires[0]
+                    elif special_tile == "┐":
+                        wire_image = wires[1]
+                    elif special_tile == "└":
+                        wire_image = wires[3]
+                    elif special_tile == "┘":
+                        wire_image = wires[4]
+                    elif special_tile == "─":
+                        wire_image = wires[2]
+                    elif special_tile == "│":
+                        wire_image = wires[5]
+                        
+                    if wire_image != None:
+                        screen.blit(wire_image, (screen_x, screen_y))
+                
     
-                screen.blit(image, (screen_x, screen_y))
+                
+    
+                
                 
         
