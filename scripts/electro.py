@@ -58,9 +58,9 @@ class Electro_Object:
             for i in range(0, len(self.wind_sprites)):
                 self.wind_sprites[i] = pygame.transform.rotate(self.wind_sprites[i], angle)
                 
-    def update(self, player, player_rect):
+    def update(self, player, balls = []):
         if self.type == "fan":
-            if self.wind_rect.colliderect(player_rect):
+            if self.wind_rect.colliderect(player.rect):
                 accel = 0.15
                 if player.state == "steam":
                     accel = 0.5
@@ -73,6 +73,20 @@ class Electro_Object:
                     player.vy -= accel
                 elif self.dir == "down":
                     player.vy += accel
+            
+            if len(balls) > 0:
+                for ball in balls:
+                    if self.wind_rect.colliderect(ball.rect):
+                        accel = 0.15
+                                
+                        if self.dir == "left":
+                            ball.vx -= accel
+                        elif self.dir == "right":
+                            ball.vx += accel
+                        elif self.dir == "up":
+                            ball.vy -= accel
+                        elif self.dir == "down":
+                            ball.vy += accel
                 
         
     
@@ -84,8 +98,7 @@ class Electro_Object:
                 self.anime_timer = 0
                 self.anime_index = (self.anime_index + 1) % len(self.moving_sprites)
                 self.wind_index = (self.wind_index + 1) % len(self.wind_sprites)
-                
-            
-        screen.blit(self.moving_sprites[self.anime_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))
-        screen.blit(self.wind_sprites[self.wind_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE * 6, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))        
+            screen.blit(self.wind_sprites[self.wind_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE * 6, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))
+                       
+        screen.blit(self.moving_sprites[self.anime_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))            
         

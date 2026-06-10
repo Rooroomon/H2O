@@ -24,7 +24,7 @@ class PowerSource:
         self.target = None
         self.isOn = False
         
-    def update(self, player_rect, player_state, player):
+    def update(self, player_state, player, balls):
         self.isOn = False
         
         if self.type == "battery":
@@ -32,11 +32,11 @@ class PowerSource:
         elif self.type == "detector":
             self.isOn = True #이거 조건 정해야 됨
         elif self.type == "plate":
-            if self.rect.colliderect(player_rect) and player_state != "steam":
+            if self.rect.colliderect(player.rect) and player_state != "steam":
                 self.isOn = True
                 
         if self.isOn and self.target != None:
-            self.target.update(player, player_rect)
+            self.target.update(player, balls)
             
         
     def draw(self, screen, camera_x, camera_y, WIDTH, HEIGHT):

@@ -1,5 +1,4 @@
 import pygame, math, numpy
-from scripts.tile_manager import TileMap
 
 # =========================
 # 색상
@@ -105,8 +104,14 @@ class Player:
         self.anime_speed = 0
 
     # =========================
-    # 상태 변경
+    # 클리어 처리
     # =========================
+    
+    def is_clear(self, tilemap):
+        for tile_rect in tilemap.clear_rects:
+            if self.rect.colliderect(tile_rect):
+                return True
+        return False
 
     # =========================
     # 입력 처리
@@ -115,30 +120,8 @@ class Player:
     def input(self):
         keys = pygame.key.get_pressed()
         
-        if self.transCool < 0 and keys[pygame.K_f]:            
-            if self.state == "water":
-                if self.temperature >= 100:
-                    self.state = "steam"
-                    self.movedelay = 36
-                    self.animestate = "W_eva"
-                    self.transCool = 60
-                elif self.temperature <= -100:
-                    self.state = "ice"
-                    self.movedelay = 40
-                    self.animestate = "W_freeze"
-                    self.transCool = 60
-            else:
-                if self.state == "steam":
-                    self.animestate = "C_con"
-                    self.movedelay = 36
-                    self.transCool = 60
-                elif self.state == "ice":
-                    self.animestate = "I_unfreeze"
-                    self.movedelay = 40
-                    self.transCool = 60
-                    
-                self.state = "water"
-                
+        if self.transCool < 0 and keys[pygame.K_f]:
+            self.change_state()
         else:
             self.transCool -= 1
         
@@ -174,6 +157,7 @@ class Player:
                 # 점프
                 if keys[pygame.K_SPACE] and self.on_ground:
                     self.vy = -7
+                    self.rect.y -= 2
                     self.animestate = "W_jump"
                     
                 if not self.on_ground and self.state == "water":
@@ -220,6 +204,30 @@ class Player:
     
                 self.vx = max(-max_speed, min(max_speed, self.vx))
                 self.vy = max(-max_speed, min(max_speed, self.vy))
+    
+    def change_state(self):
+        if self.state == "water":
+            if self.temperature >= 100:
+                self.state = "steam"
+                self.movedelay = 36
+                self.animestate = "W_eva"
+                self.transCool = 60
+            elif self.temperature <= -100:
+                self.state = "ice"
+                self.movedelay = 40
+                self.animestate = "W_freeze"
+                self.transCool = 60
+        else:
+            if self.state == "steam":
+                self.animestate = "C_con"
+                self.movedelay = 36
+                self.transCool = 60
+            elif self.state == "ice":
+                self.animestate = "I_unfreeze"
+                self.movedelay = 40
+                self.transCool = 60
+                
+            self.state = "water"
 
     # =========================
     # 물리
@@ -252,6 +260,11 @@ class Player:
         self.on_ground = False
 
         prev_rect = self.rect.copy()
+        
+        if abs(self.vx) < 0.05:
+            self.vx = 0
+        if abs(self.vy) < 0.05:
+            self.vy = 0
         
         self.rect.x += self.vx
         self.rect.y += self.vy
@@ -401,7 +414,7 @@ class Player:
             yPivot = 42
         elif self.animestate == "W_fall":
             target = playerW_fall
-            self.anime_speed = 6
+            self.anime_speed = 7
             yPivot = 42
         elif self.animestate == "W_falling":
             target = playerW_falling

@@ -3,6 +3,7 @@ from scripts.slope import Slope
 from scripts.electro import Electro_Object
 from scripts.power import PowerSource
 from scripts.temperature import TemperatureObject
+from scripts.ball_Move import Ball
 
 # =========================
 # 파일 로드
@@ -68,6 +69,7 @@ start_sprite = pygame.transform.scale(start_sprite, (TILE_SIZE * 2, TILE_SIZE * 
 #D : 빛 감지기
 #P : 발판
 #┌┐└┘─│ : 전선
+#b : 공
 
 MAP1 = [
     "X#├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤#XX",
@@ -95,7 +97,16 @@ Special1 = [
 ]
 
 MAP2 = [
-    "0├→→→┤├→→→┤├→→→┤├→→→┤0",
+    "X#├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤├→→→┤#XX",
+    "X#↑............................↓#XX",
+    "X#↑............................↓#XX",
+    "X#↑............................↓#XX",
+    "X#↑............................↓###",
+    "S#↑............................↓GC#",
+    "X#↑............................↓CC#",
+    "X#↑............................↓CC#",
+    "X#↑............................┘CC#",
+    "←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←#",
 ]
 Special2 = [
     "...................................",
@@ -104,9 +115,9 @@ Special2 = [
     "...................................",
     "...................................",
     "...................................",
+    "...................b...............",
     "...................................",
-    "...................................",
-    "...................................",
+    "......................←P...........",
     "...................................",]
 
 MAP3 = [
@@ -213,10 +224,11 @@ def get_slopePair(target, y, x):
 
 class TileMap:
     def __init__(self):
+        self.mapCount = len(Map_List)
+        
         self.map_data = MAP1
         self.special_data = Special1
         self.wall_rects, self.clear_rects = get_wall(0)
-        self.wire_index = []
 
         self.width = len(self.map_data[0])
         self.height = len(self.map_data)
@@ -224,11 +236,14 @@ class TileMap:
     def change_map(self, index):
         self.map_data = Map_List[index]
         self.special_data = Special_List[index]
-        self.wall_rects, self.clear_rects = get_wall(0)
+        self.wall_rects, self.clear_rects = get_wall(index)
+        self.width = len(self.map_data[0])
+        self.height = len(self.map_data)
         found = 0b0
         slope_List = []
         power_List = []
         temp_List = []
+        ball_List = []
         
         for y, row in enumerate(self.map_data):
             for x, ch in enumerate(row):
@@ -260,9 +275,12 @@ class TileMap:
                 elif tile == "C":
                     object = TemperatureObject(x * TILE_SIZE, y * TILE_SIZE, "cold")
                     temp_List.append(object)
+                elif tile == "b":
+                    object = Ball(x * TILE_SIZE, y * TILE_SIZE)
+                    ball_List.append(object)
                     
                         
-        return slope_List, power_List, temp_List
+        return slope_List, power_List, temp_List, ball_List
                     
         
 
@@ -358,6 +376,8 @@ class TileMap:
         # 보이는 타일만 렌더링
         for y in range(first_tile_y, last_tile_y):
             for x in range(first_tile_x, last_tile_x):
+                if not self.in_bounds(x, y):
+                    continue
                 
                 tile = self.map_data[y][x]
                 special_tile = self.special_data[y][x]

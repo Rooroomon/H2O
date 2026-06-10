@@ -1,5 +1,4 @@
 import pygame, math, numpy
-from scripts.tile_manager import TileMap
 
 def check_collision(rect, tiles):
     hit_list = []
@@ -9,10 +8,9 @@ def check_collision(rect, tiles):
     return hit_list
 
 class Ball:
-    def __init__(self, x, y, radius):
-        self.rect = pygame.Rect(x, y, radius * 2, radius * 2)
-
-        self.radius = radius
+    def __init__(self, x, y):
+        self.radius = 20
+        self.rect = pygame.Rect(x, y, self.radius * 2, self.radius * 2)
 
         self.vx = 0
         self.vy = 0

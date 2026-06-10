@@ -32,7 +32,7 @@ class TemperatureObject:
 
         if dist < 110:
             if self.kind == "hot":
-                player.temperature += 0.5
+                player.temperature += 0.75
             else:
-                player.temperature -= 0.5
+                player.temperature -= 0.75
             player.temp_clock = 0
