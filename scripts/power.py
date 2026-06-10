@@ -32,6 +32,11 @@ class PowerSource:
         elif self.type == "detector":
             self.isOn = True #이거 조건 정해야 됨
         elif self.type == "plate":
+            for ball in balls:
+                if self.rect.colliderect(ball.rect):
+                    self.isOn = True
+                    break
+                
             if self.rect.colliderect(player.rect) and player_state != "steam":
                 self.isOn = True
                 

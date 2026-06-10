@@ -20,8 +20,6 @@ class Electro_Object:
         self.anime_index = 0
         self.moving_sprites = []
         
-        self.wind_rect = pygame.Rect(x - TILE_SIZE * 6, y - TILE_SIZE, TILE_SIZE * 5, TILE_SIZE * 3)
-        
         if type == "fan":
             self.wind_index = 0
             self.wind_sprites = []
@@ -40,15 +38,19 @@ class Electro_Object:
             angle = 0
             if dir == "up":
                 angle = -90
-                self.offset_x, self.offset_y = 1, -1
+                self.offset_x, self.offset_y = -1, -1
+                self.wind_rect = pygame.Rect(x - TILE_SIZE, y - TILE_SIZE * 6, TILE_SIZE * 3, TILE_SIZE * 5)
             elif dir == "right":
                 angle = -180
                 self.offset_x, self.offset_y = 1, 1
+                self.wind_rect = pygame.Rect(x + TILE_SIZE + 2, y - TILE_SIZE, TILE_SIZE * 5, TILE_SIZE * 3)
             elif dir == "down":
                 angle = -270
-                self.offset_x, self.offset_y = -1, 1
-            else:
+                self.offset_x, self.offset_y = -1, 0
+                self.wind_rect = pygame.Rect(x - TILE_SIZE, y + TILE_SIZE * 2, TILE_SIZE * 3, TILE_SIZE * 5)
+            else: #왼쪽
                 self.offset_x, self.offset_y = -1, -1
+                self.wind_rect = pygame.Rect(x - TILE_SIZE * 6, y - TILE_SIZE, TILE_SIZE * 5, TILE_SIZE * 3)
                 
             self.stop_sprite = pygame.transform.rotate(self.stop_sprite, angle)
             
@@ -98,7 +100,7 @@ class Electro_Object:
                 self.anime_timer = 0
                 self.anime_index = (self.anime_index + 1) % len(self.moving_sprites)
                 self.wind_index = (self.wind_index + 1) % len(self.wind_sprites)
-            screen.blit(self.wind_sprites[self.wind_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE * 6, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))
+            screen.blit(self.wind_sprites[self.wind_index], (self.wind_rect.x - camera_x + WIDTH / 2, self.wind_rect.y - camera_y + HEIGHT / 2))
                        
         screen.blit(self.moving_sprites[self.anime_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))            
         

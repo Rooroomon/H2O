@@ -15,9 +15,9 @@ class Ball:
         self.vx = 0
         self.vy = 0
 
-    def update(self, slopes, tilemap):
+    def update(self, slopes, tilemap, player):
         # 중력
-        self.vy += 0.4
+        self.vy += 0.1
         
         self.vy = min(15, self.vy)
         
@@ -29,6 +29,15 @@ class Ball:
         #지형 충돌
         collide_list = check_collision(self.rect, tilemap.wall_rects)
         side = set()
+        
+        if self.rect.colliderect(player.rect):
+            accel = 0
+            if self.rect.x < player.rect.x:
+                accel = -0.5
+            else:
+                accel = 0.5
+                
+            self.vx = player.vx + accel
 
         for rect in collide_list:
             overlap = self.rect.clip(rect)

@@ -1,5 +1,9 @@
 import pygame, math, numpy
-from pyvidplayer2 import Video
+#from pyvidplayer2 import Video
+
+pygame.init()
+pygame.mixer.init()
+pygame.mixer.music.set_volume(0.3)
 
 from scripts.player_Move import Player
 from scripts.ball_Move import Ball
@@ -9,16 +13,12 @@ from scripts.electro import Electro_Object
 from scripts.temperature import TemperatureObject
 
 
-pygame.init()
-pygame.mixer.init()
-pygame.mixer.music.set_volume(0.3)
-
 # =========================
 # 파일 로드
 # =========================
 icon = pygame.image.load("./assets/Sprite/Icon.png")
 clear_sheet = pygame.image.load("./assets/Sprite/Clear_Sheet.png")
-video = Video("./assets/Start_Animation.mp4")
+#video = Video("./assets/Start_Animation.mp4")
 pygame.mixer.music.load("./assets/BGM/MainMenu.mp3")
 #BGM_menu = pygame.mixer.Sound("./assets/BGM/MainMenu.mp3")
 
@@ -27,11 +27,13 @@ pygame.mixer.music.load("./assets/BGM/MainMenu.mp3")
 # =========================
 clearEffect_frames = []
 FRAME_W, FRAME_H = 105, 26
+clearOffset_x = 377
+clearOffset_y = 295
 
 for i in range(32):
     row, col = divmod(i, 1)
     rect = pygame.Rect(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
-    clearEffect_frames.append(pygame.transform.scale(clear_sheet.subsurface(rect), (420, 104)))
+    clearEffect_frames.append(pygame.transform.scale(clear_sheet.subsurface(rect), (525, 130)))
 
 # =========================
 # 설정
@@ -140,6 +142,10 @@ while running:
             menu.change_scale(window_width, window_height)
             overlay = pygame.Surface(screen.get_size())
             overlay.fill((0, 0, 0))
+            for i in range(0, len(clearEffect_frames)):
+                clearEffect_frames[i] = pygame.transform.scale(clearEffect_frames[i], (525 * scale, 130 * scale))
+            clearOffset_x = (window_width - 525 * scale)//2
+            clearOffset_y = (window_height - 130 * scale)//2
         
         if state == "title" and canMove:
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -169,7 +175,7 @@ while running:
         player.update_state()
 
         for ball in balls:
-            ball.update(slopes, tilemap)
+            ball.update(slopes, tilemap, player)
 
         for object in powers:
             object.update(player.state, player, balls)
@@ -236,6 +242,8 @@ while running:
     if isClear and canMove:
         effect = "clear"
         canMove = False
+        anime_timer = 0
+        anime_index = 0
 
     if effect == "fade_out":
         if alpha < 255:
@@ -306,7 +314,6 @@ while running:
                     afterStage = -1
                 afterMove = True
                 alpha = 0
-                event_timer = 0
             
         #연출
         player.vx = 0
@@ -319,7 +326,7 @@ while running:
             player.rect.y -= 2
             player.animestate = "W_jump"
             
-        screen.blit(clearEffect_frames[anime_index], (window_width//2 - 210, window_height//2 - 52))
+        screen.blit(clearEffect_frames[anime_index], (clearOffset_x, clearOffset_y))
     
 
     # 화면에 출력

@@ -156,7 +156,7 @@ class Player:
     
                 # 점프
                 if keys[pygame.K_SPACE] and self.on_ground:
-                    self.vy = -7
+                    self.vy = -8
                     self.rect.y -= 2
                     self.animestate = "W_jump"
                     

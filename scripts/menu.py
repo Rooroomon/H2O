@@ -1,6 +1,5 @@
 import pygame, math, numpy
 
-
 font = pygame.font.Font("./assets/NeoDunggeunmo.ttf", 40)
 GRAY = (161, 161, 161)
 clock = pygame.time.Clock()
