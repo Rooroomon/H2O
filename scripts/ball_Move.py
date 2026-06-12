@@ -15,7 +15,7 @@ class Ball:
         self.vx = 0
         self.vy = 0
 
-    def update(self, slopes, tilemap, player):
+    def update(self, slopes, wall_rects, player):
         # 중력
         self.vy += 0.1
         
@@ -27,7 +27,7 @@ class Ball:
         self.rect.y += self.vy
         
         #지형 충돌
-        collide_list = check_collision(self.rect, tilemap.wall_rects)
+        collide_list = check_collision(self.rect, wall_rects)
         side = set()
         
         if self.rect.colliderect(player.rect):
@@ -59,7 +59,7 @@ class Ball:
         
         # 1. X축 이동 및 충돌 처리
         self.rect.topleft = (self.rect.x, self.rect.y)
-        Xhit_list = check_collision(self.rect, tilemap.wall_rects)
+        Xhit_list = check_collision(self.rect, wall_rects)
         for tile in Xhit_list:
             if self.vx >= 0 and self.rect.x < tile.left - 20 and "right" in side:
                 self.vx = 0
@@ -70,7 +70,7 @@ class Ball:
     
         # 2. 바닥
         self.rect.topleft = (self.rect.x, self.rect.y)
-        Yhit_list = check_collision(self.rect, tilemap.wall_rects)
+        Yhit_list = check_collision(self.rect, wall_rects)
         for tile in Yhit_list:
             if self.vy >= 0 and self.rect.y < tile.top - 20 and "bottom" in side:
                 self.vy = 0

@@ -12,6 +12,9 @@ WHITE = (255, 255, 255)
 player_sheet = pygame.image.load("./assets/Sprite/Player_Sheet.png")
 gauge_sheet = pygame.image.load("./assets/Sprite/Gauge.png")
 
+sound_jump = pygame.mixer.Sound("./assets/SE/Jump.wav")
+sound_eva = pygame.mixer.Sound("./assets/SE/Evaporate.wav")
+sound_freeze = pygame.mixer.Sound("./assets/SE/Freeze.wav")
 
 # =========================
 # 스프라이트 설정
@@ -41,11 +44,11 @@ playerI_unfreeze = [player_frames[i] for i in [88, 89, 90, 91, 92, 99, 100, 101,
 playerC_idle = [player_frames[i] for i in [132]]
 playerC_condensation = [player_frames[i] for i in [143, 144, 145, 146, 154, 155, 156, 157]]
 
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 0, 25, 77)), (75, 231)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((25, 0, 25, 77)), (75, 231)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((50, 0, 25, 77)), (75, 231)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((75, 0, 25, 77)), (75, 231)))
-gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((100, 0, 25, 77)), (75, 231)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((0, 0, 25, 77)), (100, 308)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((25, 0, 25, 77)), (100, 308)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((50, 0, 25, 77)), (100, 308)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((75, 0, 25, 77)), (100, 308)))
+gauge_sprites.append(pygame.transform.scale(gauge_sheet.subsurface((100, 0, 25, 77)), (100, 308)))
 
 clock = pygame.time.Clock()
 
@@ -102,6 +105,8 @@ class Player:
         self.anime_timer = 0
         self.anime_index = 0
         self.anime_speed = 0
+        
+        #self.sound_mixer = mixer
 
     # =========================
     # 클리어 처리
@@ -125,7 +130,7 @@ class Player:
         else:
             self.transCool -= 1
         
-        #치트
+        #치트=====================================
         if keys[pygame.K_q]:
             self.temperature = -150
         elif keys[pygame.K_e]:
@@ -159,6 +164,7 @@ class Player:
                     self.vy = -8
                     self.rect.y -= 2
                     self.animestate = "W_jump"
+                    sound_jump.play()
                     
                 if not self.on_ground and self.state == "water":
                     if self.animestate != "W_jump" and self.animestate != "W_fall" and self.animestate != "W_falling":
@@ -212,11 +218,13 @@ class Player:
                 self.movedelay = 36
                 self.animestate = "W_eva"
                 self.transCool = 60
+                sound_eva.play()
             elif self.temperature <= -100:
                 self.state = "ice"
                 self.movedelay = 40
                 self.animestate = "W_freeze"
                 self.transCool = 60
+                sound_freeze.play()
         else:
             if self.state == "steam":
                 self.animestate = "C_con"
@@ -233,9 +241,13 @@ class Player:
     # 물리
     # =========================
 
-    def physics(self, slopes, tilemap):
+    def physics(self, slopes, wall_rects):
         dt = clock.tick(60) / 1000
         self.temp_clock += dt
+        
+        if self.rect.y >= 20 * TILE_SIZE:
+            self.rect.x = 150
+            self.rect.y = 500
         
         
         if self.state != "water":
@@ -270,7 +282,7 @@ class Player:
         self.rect.y += self.vy
         
         #지형 충돌
-        collide_list = check_collision(self.rect, tilemap.wall_rects)
+        collide_list = check_collision(self.rect, wall_rects)
         side = set()
 
         for rect in collide_list:
@@ -293,7 +305,7 @@ class Player:
         
         # 1. X축 이동 및 충돌 처리
         self.rect.topleft = (self.rect.x, self.rect.y)
-        Xhit_list = check_collision(self.rect, tilemap.wall_rects)
+        Xhit_list = check_collision(self.rect, wall_rects)
         for tile in Xhit_list:
             if self.vx >= 0 and self.rect.x < tile.left - 40 and "right" in side:
                 self.vx = 0
@@ -304,7 +316,7 @@ class Player:
     
         # 2. 바닥
         self.rect.topleft = (self.rect.x, self.rect.y)
-        Yhit_list = check_collision(self.rect, tilemap.wall_rects)
+        Yhit_list = check_collision(self.rect, wall_rects)
         for tile in Yhit_list:
             if self.vy >= 0 and self.rect.y < tile.top - 40 and "bottom" in side:
                 self.vy = 0
@@ -345,8 +357,11 @@ class Player:
     # =========================
     # 상태 업데이트
     # =========================
-
-    def update_state(self):                   
+    def update_state(self, volume):
+        sound_jump.set_volume(volume)
+        sound_eva.set_volume(volume)
+        sound_freeze.set_volume(volume)
+        
         #보는 방향
         if(abs(self.vx) > 0.1):
             self.dir = numpy.sign(self.vx)
@@ -414,7 +429,7 @@ class Player:
             yPivot = 42
         elif self.animestate == "W_fall":
             target = playerW_fall
-            self.anime_speed = 7
+            self.anime_speed = 10
             yPivot = 42
         elif self.animestate == "W_falling":
             target = playerW_falling
@@ -506,16 +521,9 @@ class Player:
                 else:
                     gauge_image = gauge_sprites[3]
                 
-        UIscreen.blit(gauge_image, (4, 0))
+        UIscreen.blit(gauge_image, (4, UIscreen.get_size()[1] - 312))
 
 
-        gauge_height = (self.temperature + 150) / 300 * 171
+        gauge_height = (self.temperature + 150) / 300 * 228
 
-        pygame.draw.rect(UIscreen, (255,84,84), (28, 184 - gauge_height, 6, gauge_height))
-
-        # 상태 텍스트
-        font = pygame.font.SysFont(None, 32)
-
-        txt = font.render(f"STATE : {self.state}", True, WHITE)
-
-        UIscreen.blit(txt, (80, 20))
+        pygame.draw.rect(UIscreen, (255,84,84), (36, UIscreen.get_size()[1] - 67 - gauge_height, 8, gauge_height))

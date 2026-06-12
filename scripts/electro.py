@@ -8,9 +8,10 @@ TILE_SIZE = 64
 # =========================
 fan_sheet = pygame.image.load("./assets/Sprite/Fan_Sheet.png")
 wind_sheet = pygame.image.load("./assets/Sprite/Wind_Sheet.png")
+electro_sheet = pygame.image.load("./assets/Sprite/Electronic_Sheet.png")
 
 class Electro_Object:
-    def __init__(self, x, y, type, dir):
+    def __init__(self, x, y, type, dir = "left"):
         self.x = x
         self.y = y
         self.dir = dir
@@ -24,10 +25,9 @@ class Electro_Object:
             self.wind_index = 0
             self.wind_sprites = []
             
-            self.stop_sprite = pygame.transform.scale(fan_sheet.subsurface((0, 0, 16, 24)), (TILE_SIZE * 2, TILE_SIZE * 3)) #기본 왼쪽
+            self.moving_sprites.append(pygame.transform.scale(fan_sheet.subsurface((0, 0, 16, 24)), (TILE_SIZE * 2, TILE_SIZE * 3)))
             self.moving_sprites.append(pygame.transform.scale(fan_sheet.subsurface((16, 0, 16, 24)), (TILE_SIZE * 2, TILE_SIZE * 3)))
             self.moving_sprites.append(pygame.transform.scale(fan_sheet.subsurface((32, 0, 16, 24)), (TILE_SIZE * 2, TILE_SIZE * 3)))
-            self.moving_sprites.append(pygame.transform.scale(fan_sheet.subsurface((48, 0, 16, 24)), (TILE_SIZE * 2, TILE_SIZE * 3)))
             self.wind_sprites.append(pygame.transform.scale(wind_sheet.subsurface((0, 0, 40, 24)), (TILE_SIZE * 5, TILE_SIZE * 3)))
             self.wind_sprites.append(pygame.transform.scale(wind_sheet.subsurface((0, 24, 40, 24)), (TILE_SIZE * 5, TILE_SIZE * 3)))
             self.wind_sprites.append(pygame.transform.scale(wind_sheet.subsurface((0, 48, 40, 24)), (TILE_SIZE * 5, TILE_SIZE * 3)))
@@ -51,16 +51,19 @@ class Electro_Object:
             else: #왼쪽
                 self.offset_x, self.offset_y = -1, -1
                 self.wind_rect = pygame.Rect(x - TILE_SIZE * 6, y - TILE_SIZE, TILE_SIZE * 5, TILE_SIZE * 3)
-                
-            self.stop_sprite = pygame.transform.rotate(self.stop_sprite, angle)
             
             for i in range(0, len(self.moving_sprites)):
                 self.moving_sprites[i] = pygame.transform.rotate(self.moving_sprites[i], angle)
                 
             for i in range(0, len(self.wind_sprites)):
                 self.wind_sprites[i] = pygame.transform.rotate(self.wind_sprites[i], angle)
+        elif type == "door":
+            self.off_sprite = pygame.transform.scale(electro_sheet.subsurface((16, 16, 8, 8)), (TILE_SIZE, TILE_SIZE))
+            self.on_sprite = pygame.transform.scale(electro_sheet.subsurface((24, 16, 8, 8)), (TILE_SIZE, TILE_SIZE))
+            
+            self.rect = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
                 
-    def update(self, player, balls = []):
+    def update(self, player, door_rects, balls = []):
         if self.type == "fan":
             if self.wind_rect.colliderect(player.rect):
                 accel = 0.15
@@ -89,18 +92,24 @@ class Electro_Object:
                             ball.vy -= accel
                         elif self.dir == "down":
                             ball.vy += accel
+        elif self.type == "door":
+            door_rects.append(self.rect)
                 
         
     
     def draw(self, screen, camera_x, camera_y, WIDTH, HEIGHT, isOn):
-        img = self.stop_sprite
-        if isOn:
-            self.anime_timer += 1
-            if self.anime_timer >= 5:
-                self.anime_timer = 0
-                self.anime_index = (self.anime_index + 1) % len(self.moving_sprites)
-                self.wind_index = (self.wind_index + 1) % len(self.wind_sprites)
-            screen.blit(self.wind_sprites[self.wind_index], (self.wind_rect.x - camera_x + WIDTH / 2, self.wind_rect.y - camera_y + HEIGHT / 2))
-                       
-        screen.blit(self.moving_sprites[self.anime_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))            
+        if self.type == "fan":
+            if isOn:
+                self.anime_timer += 1
+                if self.anime_timer >= 5:
+                    self.anime_timer = 0
+                    self.anime_index = (self.anime_index + 1) % len(self.moving_sprites)
+                    self.wind_index = (self.wind_index + 1) % len(self.wind_sprites)
+                screen.blit(self.wind_sprites[self.wind_index], (self.wind_rect.x - camera_x + WIDTH / 2, self.wind_rect.y - camera_y + HEIGHT / 2))
+                           
+            screen.blit(self.moving_sprites[self.anime_index], (self.x - camera_x + WIDTH / 2 + self.offset_x * TILE_SIZE, self.y - camera_y + HEIGHT / 2 + self.offset_y * TILE_SIZE))
+        elif self.type == "door":
+            img = self.on_sprite if isOn else self.off_sprite
+            
+            screen.blit(img, (self.x - camera_x + WIDTH / 2, self.y - camera_y + HEIGHT / 2))
         

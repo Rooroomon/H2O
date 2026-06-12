@@ -3,8 +3,8 @@ import pygame, math, numpy
 font = pygame.font.Font("./assets/NeoDunggeunmo.ttf", 40)
 GRAY = (161, 161, 161)
 clock = pygame.time.Clock()
-start_text = font.render("Game Start", True, (0, 0, 0))
-quit_text = font.render("Quit", True, (0, 0, 0))
+start_text = font.render("게임 시작", True, (0, 0, 0))
+quit_text = font.render("종료", True, (0, 0, 0))
 
 class Menu:
     def __init__(self, WIDTH, HEIGHT):
@@ -45,9 +45,9 @@ class Menu:
         self.startbutton_sprite = self.scaledbutton_sprites[0]
         self.quitbutton_sprite = self.scaledbutton_sprites[0]
         
-    def menu_button(self, event, updown):
+    def menu_button(self, event):
         # 마우스 클릭
-        if updown == "down":
+        if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # 왼쪽 버튼
                 if self.startbutton_rect.collidepoint(event.pos):
                     self.startbutton_sprite = self.scaledbutton_sprites[1]
@@ -55,7 +55,7 @@ class Menu:
                 elif self.quitbutton_rect.collidepoint(event.pos):
                     self.quitbutton_sprite = self.scaledbutton_sprites[1]
                     return "None"
-        else:
+        elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:  # 왼쪽 버튼
                 if self.startbutton_rect.collidepoint(event.pos):
                     self.startbutton_sprite = self.scaledbutton_sprites[0]
