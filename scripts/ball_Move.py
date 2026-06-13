@@ -8,14 +8,27 @@ def check_collision(rect, tiles):
     return hit_list
 
 class Ball:
-    def __init__(self, x, y):
+    def __init__(self, x, y, balls, timer = -1):
+        self.state = "normal"
         self.radius = 20
         self.rect = pygame.Rect(x, y, self.radius * 2, self.radius * 2)
 
         self.vx = 0
         self.vy = 0
+        
+        self.balls = balls
+        
+        if timer != -1:
+            self.state = "temp"
+            self.timer = timer
+            
 
     def update(self, slopes, wall_rects, player):
+        if self.state == "temp":
+            self.timer -= 1
+            if self.timer < 0:
+                self.state = "dead"
+        
         # 중력
         self.vy += 0.1
         
@@ -75,6 +88,12 @@ class Ball:
             if self.vy >= 0 and self.rect.y < tile.top - 20 and "bottom" in side:
                 self.vy = 0
                 self.rect.bottom = tile.top + 1
+                
+        # 3. 천장
+        for tile in Yhit_list:
+            if self.vy <= 0 and self.rect.y > tile.bottom - 6 and "top" in side:
+                self.vy = 0
+                self.rect.top = tile.bottom
 
         
         # 경사 충돌    
@@ -82,11 +101,11 @@ class Ball:
 
             if slope.x1 <= self.rect.x <= slope.x2:
 
-                slope_y = slope.get_y(self.rect.x)
+                slope_y = slope.get_y(self.rect.x) - self.radius + 7.5
 
                 feet = self.rect.y + self.radius
 
-                if feet >= slope_y and feet <= slope_y + 15:
+                if feet >= slope_y - 5 and feet <= slope_y + 15:
 
                     self.rect.y = slope_y - self.radius
 
@@ -99,16 +118,16 @@ class Ball:
                     angle = math.atan2(dy, dx)
 
                     # 경사 따라 굴러감
-                    self.vx += math.cos(angle) * 0.5 * numpy.sign(angle)
-
-        # 마찰
-        self.vx *= 0.99
+                    self.vx += math.cos(angle) * 0.125 * numpy.sign(angle)
+                    
+        self.vx *= 0.995
 
     def draw(self, screen, camera_x, camera_y, WIDTH, HEIGHT):
+        color = (255, 200, 100) if self.state == "normal" else (50 + (300 - self.timer) * 2 / 3, 75, 75)
 
         pygame.draw.circle(
             screen,
-            (255, 200, 100),
+            color,
             (self.rect.x - camera_x + WIDTH / 2 + self.radius, self.rect.y - camera_y + HEIGHT / 2 + self.radius),
             self.radius
         )

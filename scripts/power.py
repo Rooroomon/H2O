@@ -54,8 +54,8 @@ class PowerSource:
 
             self.isOn_pre = self.isOn
                 
-        if self.isOn and self.target != None:
-            self.target.update(player, door_rects, balls)
+        if self.target != None:
+            self.target.update(player, door_rects, self.isOn, balls)
             
         
     def draw(self, screen, camera_x, camera_y, WIDTH, HEIGHT):

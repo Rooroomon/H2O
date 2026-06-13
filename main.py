@@ -133,7 +133,7 @@ powers = []
 objects = []
 
 player = Player()
-tilemap = TileMap()
+tilemap = TileMap(balls)
 
 menu = Menu(WIDTH, HEIGHT)
 
@@ -252,7 +252,9 @@ while running:
         player.update_state(slider_value)
 
         for ball in balls:
-            ball.update(slopes, wall_rects, player)
+            ball.update(slopes, tilemap.wall_rects, player)
+            if ball.state == "dead":
+                balls.remove(ball)
     # =====================
     # 렌더링
     # =====================
@@ -268,11 +270,11 @@ while running:
         for slope in slopes:
             slope.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
 
-        for ball in balls:
-            ball.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
-
         for object in powers:
             object.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
+        
+        for ball in balls:
+            ball.draw(game_surface, camera.x, camera.y, WIDTH, HEIGHT)
 
         player.draw(game_surface, UI_surface, camera.x, camera.y, WIDTH, HEIGHT)
         isClear = player.is_clear(tilemap)
@@ -428,6 +430,11 @@ while running:
             afterMove = False
             effectSpeed = 5
             stage = None
+            
+            new_data = {"volume": sound_slider.value, "cleared_stage": None}
+            
+            with open(save_path, "w", encoding="utf-8") as f:
+                json.dump(new_data, f, indent=4)
         
         if keys[pygame.K_s]:
             effect = "fade_out"
@@ -537,10 +544,6 @@ while running:
         
     sound_slider.draw(screen)
     
-    #테스트 프레임 ================================================================================
-    fps = clock.get_fps()
-    fps_text = font.render(f"FPS: {fps:.1f}", True, (255, 255, 255))
-    screen.blit(fps_text, (window_width - 175, 20))
 
     pygame.display.flip()
 

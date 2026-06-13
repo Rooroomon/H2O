@@ -143,7 +143,7 @@ class Player:
             # 물
             # ---------------------
             if self.state == "water":
-                accel = 0.75
+                accel = 0.55
                 max_speed = 4
     
                 if keys[pygame.K_a] or keys[pygame.K_LEFT]:
